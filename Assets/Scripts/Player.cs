@@ -51,6 +51,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             int id = packet.ReadInt();
             long databaseID = 0;
+            int response = 0;
 
             switch ((RequestsID)id)
             {
@@ -66,7 +67,7 @@ namespace AhmetsHub.ClashOfPirates
                     SyncData(playerSyncData);
                     break;
                 case RequestsID.BUILD:
-                    int response = packet.ReadInt();
+                    response = packet.ReadInt();
                     switch (response)
                     {
                         case 0:
@@ -135,14 +136,29 @@ namespace AhmetsHub.ClashOfPirates
                     UI_BuildingUpgrade.instanse.Open(sr, databaseID);
                     break;
                 case RequestsID.UPGRADE:
-                    long res = packet.ReadLong();
-                    if(res > 0)
+                    response = packet.ReadInt();
+                    if(response > 0)
                     {
                         Debug.Log("Upgrade started.");
                     }
                     else
                     {
                         Debug.Log("Something went wrong.");
+                    }
+                    break;
+                case RequestsID.INSTANTBUILD:
+                    response = packet.ReadInt();
+                    if(response == 2)
+                    {
+                        Debug.Log("No diamonds.");
+                    }
+                    else if(response == 1)
+                    {
+                        Debug.Log("Instant built.");
+                    }
+                    else
+                    {
+                        Debug.Log("Nothing happend.");
                     }
                     break;
             }

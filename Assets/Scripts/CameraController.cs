@@ -166,6 +166,14 @@ namespace AhmetsHub.ClashOfPirates
                             packet.Write(Building.selectedInstanse.data.databaseID);
                             Sender.TCP_Send(packet);
                         }
+                        else if(results[i].gameObject == UI_BuildingOptions.instanse.instantButton.gameObject)
+                        {
+                            //handled = true;
+                            Packet packet = new Packet();
+                            packet.Write((int)Player.RequestsID.INSTANTBUILD);
+                            packet.Write(Building.selectedInstanse.data.databaseID);
+                            Sender.TCP_Send(packet);
+                        }
                     }
                     /*if(handled)
                     {

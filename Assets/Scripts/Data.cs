@@ -20,7 +20,7 @@ namespace AhmetsHub.ClashOfPirates
         }
         public enum BuildingID
         {
-            islandhall, goldmine, goldstorage, fisher, fishstorage
+            islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut
         }
 
         public class Building

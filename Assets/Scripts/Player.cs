@@ -71,14 +71,23 @@ namespace AhmetsHub.ClashOfPirates
                     switch (response)
                     {
                         case 0:
-                            Debug.Log("No resources");
+                            Debug.Log("Unknown");
                             break;
                         case 1:
                             Debug.Log("Placed successfully");
                             SendSyncRequest();
                             break;
                         case 2:
+                            Debug.Log("No resources");
+                            break;
+                        case 3:
+                            Debug.Log("Max Level");
+                            break;
+                        case 4:
                             Debug.Log("Place taken");
+                            break;
+                        case 5:
+                            Debug.Log("No Builder");
                             break;
                     }
                     break;
@@ -137,13 +146,24 @@ namespace AhmetsHub.ClashOfPirates
                     break;
                 case RequestsID.UPGRADE:
                     response = packet.ReadInt();
-                    if(response > 0)
+                    switch (response)
                     {
-                        Debug.Log("Upgrade started.");
-                    }
-                    else
-                    {
-                        Debug.Log("Something went wrong.");
+                        case 0:
+                            Debug.Log("Unknown");
+                            break;
+                        case 1:
+                            Debug.Log("Upgrade started");
+                            SendSyncRequest();
+                            break;
+                        case 2:
+                            Debug.Log("No resources");
+                            break;
+                        case 3:
+                            Debug.Log("Max Level");
+                            break;
+                        case 5:
+                            Debug.Log("No Builder");
+                            break;
                     }
                     break;
                 case RequestsID.INSTANTBUILD:

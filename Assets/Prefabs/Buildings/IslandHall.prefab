@@ -124,7 +124,7 @@ Transform:
   m_GameObject: {fileID: 128699665835416665}
   m_LocalRotation: {x: 0.6532815, y: 0.27059805, z: -0.27059805, w: 0.6532815}
   m_LocalPosition: {x: 0, y: 0.01, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 1}
+  m_LocalScale: {x: 4, y: 4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 128699667688358866}
@@ -226,10 +226,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7f7d67fe8ba0c74699631fd4a8a8d09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: islandhall
+  id: 0
+  collectButton: {fileID: 0}
+  collecting: 0
+  buildBar: {fileID: 0}
   _databaseID: 0
-  _rows: 3
-  _columns: 3
+  _rows: 4
+  _columns: 4
   _baseArea: {fileID: 128699665835416662}
   _levels:
   - level: 1

@@ -89,6 +89,9 @@ namespace AhmetsHub.ClashOfPirates
                         case 5:
                             Debug.Log("No Builder");
                             break;
+                        case 6:
+                            Debug.Log("Max limit reached");
+                            break;
                     }
                     break;
                 case RequestsID.REPLACE:
@@ -163,6 +166,9 @@ namespace AhmetsHub.ClashOfPirates
                             break;
                         case 5:
                             Debug.Log("No Builder");
+                            break;
+                        case 6:
+                            Debug.Log("Max limit reached");
                             break;
                     }
                     break;

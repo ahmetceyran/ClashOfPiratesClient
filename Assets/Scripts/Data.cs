@@ -17,10 +17,24 @@ namespace AhmetsHub.ClashOfPirates
             public int diamonds = 0;
             public DateTime nowTime;
             public List<Building> buildings = new List<Building>();
+            public List<Unit> units = new List<Unit>();
         }
         public enum BuildingID
         {
             islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut, armycamp, barracks
+        }
+
+        public enum UnitID
+        {
+            pirate, archer
+        }
+
+        public class Unit
+        {
+            public UnitID id = UnitID.pirate;
+            public int level = 0;
+            public long databaseID = 0;
+            public int hosing = 1;
         }
 
         public class Building

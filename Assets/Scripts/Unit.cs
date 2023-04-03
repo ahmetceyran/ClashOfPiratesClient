@@ -7,5 +7,6 @@ namespace AhmetsHub.ClashOfPirates
     public class Unit : MonoBehaviour
     {
         
+        
     }
 }

@@ -11,6 +11,9 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] public GameObject _elements = null;
         [SerializeField] private Button _closeButton = null;
 
+        [SerializeField] private UI_UnitsTraining _trainPrefab = null;
+        [SerializeField] private RectTransform _trainGrid = null;
+
         private static UI_Train _instance = null; public static UI_Train instanse { get { return _instance; } }
        
         private void Awake()

@@ -35,6 +35,11 @@ namespace AhmetsHub.ClashOfPirates
             public int level = 0;
             public long databaseID = 0;
             public int hosing = 1;
+            public bool trained = false;
+            public bool ready = false;
+            public int health = 0;
+            public int trainTime = 0;
+            public float trainedTime = 0;
         }
 
         public class Building

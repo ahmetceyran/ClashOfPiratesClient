@@ -13,7 +13,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10
         }
 
         private void Start()
@@ -29,19 +29,22 @@ namespace AhmetsHub.ClashOfPirates
 
         private bool connected = false;
         private float timer = 0;
+        private bool updating = false;
+        private float syncTime = 5;
 
         private void Update()
         {
             if(connected)
             {
-                if(timer >= 3)
+                if(timer <= 0)
                 {
-                    timer = 0;
+                    updating = true;
+                    timer = syncTime;
                     SendSyncRequest();
                 }
                 else
                 {
-                    timer += Time.deltaTime;
+                    timer -= Time.deltaTime;
                 }
                 data.nowTime = data.nowTime.AddSeconds(Time.deltaTime);
             }
@@ -57,6 +60,7 @@ namespace AhmetsHub.ClashOfPirates
             {
                 case RequestsID.AUTH:
                     connected = true;
+                    updating = true;
                     timer = 0;
                     long accountID = packet.ReadLong();
                     SendSyncRequest();
@@ -65,6 +69,7 @@ namespace AhmetsHub.ClashOfPirates
                     string playerData = packet.ReadString();
                     Data.Player playerSyncData = Data.Desrialize<Data.Player>(playerData);
                     SyncData(playerSyncData);
+                    updating = false;
                     break;
                 case RequestsID.BUILD:
                     response = packet.ReadInt();
@@ -75,7 +80,7 @@ namespace AhmetsHub.ClashOfPirates
                             break;
                         case 1:
                             Debug.Log("Placed successfully");
-                            SendSyncRequest();
+                            RushSyncRequest();
                             break;
                         case 2:
                             Debug.Log("No resources");
@@ -116,6 +121,7 @@ namespace AhmetsHub.ClashOfPirates
                                     {
 
                                     }
+                                    RushSyncRequest();
                                     break;
                                 case 2:
                                     Debug.Log("Place taken");
@@ -156,7 +162,7 @@ namespace AhmetsHub.ClashOfPirates
                             break;
                         case 1:
                             Debug.Log("Upgrade started");
-                            SendSyncRequest();
+                            RushSyncRequest();
                             break;
                         case 2:
                             Debug.Log("No resources");
@@ -181,6 +187,7 @@ namespace AhmetsHub.ClashOfPirates
                     else if(response == 1)
                     {
                         Debug.Log("Instant built.");
+                        RushSyncRequest();
                     }
                     else
                     {
@@ -272,9 +279,20 @@ namespace AhmetsHub.ClashOfPirates
                     building.AdjustUI();
                 }
             }
+
+            for(int i = 0; i < player.units.Count; i++)
+            {
+
+            }
+
             UI_Main.instanse._goldText.text = " : " + gold + " / " + maxGold;
             UI_Main.instanse._fishText.text = " : " + fish + " / " + maxFish;
             UI_Main.instanse._diamondsText.text = " : " + diamonds.ToString();
+        }
+
+        public void RushSyncRequest()
+        {
+            timer = 0;
         }
 
         private void ConnectionResponse(bool successful)

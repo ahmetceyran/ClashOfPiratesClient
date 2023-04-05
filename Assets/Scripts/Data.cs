@@ -42,6 +42,18 @@ namespace AhmetsHub.ClashOfPirates
             public float trainedTime = 0;
         }
 
+        public class ServerUnit
+        {
+            public UnitID id = UnitID.pirate;
+            public int level = 0;
+            public int requiredGold = 0;
+            public int requiredFish = 0;
+            public int requiredDiamonds = 0;
+            public int trainTime = 0;
+            public int health = 0;
+            public int housing = 0;
+        }
+
         public class Building
         {
             public BuildingID id = BuildingID.islandhall;

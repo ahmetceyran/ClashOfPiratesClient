@@ -22,7 +22,10 @@ namespace AhmetsHub.ClashOfPirates
 
         private void Clicked()
         {
-            
+            Packet paket = new Packet();
+            paket.Write((int)Player.RequestsID.TRAIN);
+            paket.Write(_id.ToString());
+            Sender.TCP_Send(paket);
         }
     }
 }

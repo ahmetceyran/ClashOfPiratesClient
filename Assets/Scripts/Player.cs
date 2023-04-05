@@ -194,6 +194,33 @@ namespace AhmetsHub.ClashOfPirates
                         Debug.Log("Nothing happend.");
                     }
                     break;
+                case RequestsID.TRAIN:
+                    response = packet.ReadInt();
+                    if(response == 4)
+                    {
+                        Debug.Log("Server unit not found.");
+                    }
+                    else if(response == 3)
+                    {
+                        Debug.Log("No capacity.");
+                    }
+                    else if(response == 2)
+                    {
+                        Debug.Log("No resources.");
+                    }
+                    else if(response == 1)
+                    {
+                        Debug.Log("Train started.");
+                        RushSyncRequest();
+                    }
+                    else
+                    {
+                        Debug.Log("Nothing happend.");
+                    }
+                    break;
+                case RequestsID.CANCELTRAIN:
+                    
+                    break;
             }
         }
 

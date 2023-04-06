@@ -19,6 +19,13 @@ namespace AhmetsHub.ClashOfPirates
             public List<Building> buildings = new List<Building>();
             public List<Unit> units = new List<Unit>();
         }
+
+        public class InitializationData
+        {
+            public long accountID = 0;
+            public List<ServerUnit> serverUnits = new List<ServerUnit>();
+        }
+
         public enum BuildingID
         {
             islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut, armycamp, barracks

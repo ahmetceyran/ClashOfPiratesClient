@@ -10,6 +10,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public Data.Player data = new Data.Player();
         private static Player _instance = null; public static Player instanse {get {return _instance; }}
+        public Data.InitializationData initializationData = new Data.InitializationData();
 
         public enum RequestsID
         {
@@ -62,7 +63,10 @@ namespace AhmetsHub.ClashOfPirates
                     connected = true;
                     updating = true;
                     timer = 0;
-                    long accountID = packet.ReadLong();
+                    string authData = packet.ReadString();
+                    initializationData = Data.Desrialize<Data.InitializationData>(authData);
+
+
                     SendSyncRequest();
                     break;
                 case RequestsID.SYNC:

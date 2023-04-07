@@ -37,7 +37,7 @@ namespace AhmetsHub.ClashOfPirates
             paket.Write((int)Player.RequestsID.CANCELTRAIN);
             paket.Write(_unit.databaseID);
             Sender.TCP_Send(paket);
-            //UI_Train.instanse.RemoveTrainingItem(index);
+            UI_Train.instanse.RemoveTrainingItem(index);
         }
 
         private void Update()
@@ -46,7 +46,7 @@ namespace AhmetsHub.ClashOfPirates
             {
                 if (_unit.trainTime <= 0 || _unit.trainedTime >= _unit.trainTime)
                 {
-                    //UI_Train.instanse.RemoveTrainingItem(index);
+                    UI_Train.instanse.RemoveTrainingItem(index);
                 }
                 else
                 {

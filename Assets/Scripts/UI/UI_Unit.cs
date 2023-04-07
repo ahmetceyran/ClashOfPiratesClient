@@ -23,24 +23,24 @@ namespace AhmetsHub.ClashOfPirates
         }
 
         public void Initialize(Data.ServerUnit unit)
-    {
-        if (unit.requiredGold > 0)
         {
-            _reqResourceText.text = "Gold: " + unit.requiredGold.ToString();
+            if (unit.requiredGold > 0)
+            {
+                _reqResourceText.text = "Gold: " + unit.requiredGold.ToString();
+            }
+            else if (unit.requiredFish > 0)
+            {
+                _reqResourceText.text = "Fish: " + unit.requiredFish.ToString();
+            }
+            else if (unit.requiredDiamonds > 0)
+            {
+                _reqResourceText.text = "Diamonds: " + unit.requiredDiamonds.ToString();
+            }
+            else
+            {
+                _reqResourceText.text = "Free";
+            }
         }
-        else if (unit.requiredFish > 0)
-        {
-            _reqResourceText.text = "Elixir: " + unit.requiredFish.ToString();
-        }
-        else if (unit.requiredDiamonds > 0)
-        {
-            _reqResourceText.text = "Gems: " + unit.requiredDiamonds.ToString();
-        }
-        else
-        {
-            _reqResourceText.text = "Free";
-        }
-    }
 
         private void Clicked()
         {
@@ -49,5 +49,19 @@ namespace AhmetsHub.ClashOfPirates
             paket.Write(_id.ToString());
             Sender.TCP_Send(paket);
         }
+
+        public void Sync()
+        {
+            count = 0;
+            for (int i = 0; i < Player.instanse.data.units.Count; i++)
+            {
+                if (Player.instanse.data.units[i].id == _id && Player.instanse.data.units[i].ready)
+                {
+                    count++;
+                }
+            }
+            haveCount = count;
+        }
+
     }
 }

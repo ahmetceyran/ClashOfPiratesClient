@@ -223,7 +223,11 @@ namespace AhmetsHub.ClashOfPirates
                     }
                     break;
                 case RequestsID.CANCELTRAIN:
-                    
+                    response = packet.ReadInt();
+                    if(response == 1)
+                    {
+                        RushSyncRequest();
+                    }
                     break;
             }
         }
@@ -319,6 +323,11 @@ namespace AhmetsHub.ClashOfPirates
             UI_Main.instanse._goldText.text = " : " + gold + " / " + maxGold;
             UI_Main.instanse._fishText.text = " : " + fish + " / " + maxFish;
             UI_Main.instanse._diamondsText.text = " : " + diamonds.ToString();
+
+            if(UI_Train.instanse.isOpen)
+            {
+                UI_Train.instanse.Sync();
+            }
         }
 
         public void RushSyncRequest()

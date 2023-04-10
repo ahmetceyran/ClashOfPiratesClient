@@ -4,11 +4,18 @@ namespace AhmetsHub.ClashOfPirates
     using System.IO;
     using System.Collections.Generic;
     using System;
+    using System.Threading.Tasks;
 
     public static class Data
     {
         public const int minGoldCollect = 10;
         public const int minFishCollect = 10;
+        public static readonly int battleDuration = 120;
+        public static readonly int gridSize = 45;
+        public static readonly float gridCellSize = 1;
+        public static readonly float battleFrameRate = 0.1f;
+        public static readonly int battleTilesWorthOfOneWall = 15;
+        public static readonly int battleGroupWallAttackRadius = 5;
 
         public class Player
         {
@@ -20,20 +27,72 @@ namespace AhmetsHub.ClashOfPirates
             public List<Unit> units = new List<Unit>();
         }
 
+        public enum UnitID
+        {
+            pirate, archer, goblin, healer, wallbreaker, giant, miner, balloon, wizard, dragon, pekka
+        }
+
+        public enum TargetPriority
+        {
+            none = 0, all = 1, defenses = 2, resources = 3, walls = 4
+        }
+
+        public enum BuildingTargetType
+        {
+            none = 0, ground = 1, air = 2, all = 3
+        }
+
+        public enum UnitMoveType
+        {
+            ground = 0, jump = 1, fly = 2, underground = 3
+        }
+
+        public enum BuildingID
+        {
+            islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut, armycamp, barracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap
+        }
+
+        public class BattleFrame
+        {
+            public int frame = 0;
+            public List<BattleFrameUnit> units = new List<BattleFrameUnit>();
+        }
+
+        public class BattleFrameUnit
+        {
+            public long id = 0;
+            public int x = 0;
+            public int y = 0;
+        }
+
+        public class BattleData
+        {
+            public Battle battle = null;
+            public List<BattleFrame> frames = new List<BattleFrame>();
+        }
+
+        public class OpponentData
+        {
+            public long id = 0;
+            public List<Building> buildings = null;
+        }
+
         public class InitializationData
         {
             public long accountID = 0;
             public List<ServerUnit> serverUnits = new List<ServerUnit>();
         }
 
-        public enum BuildingID
+        public class ServerUnit
         {
-            islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut, armycamp, barracks
-        }
-
-        public enum UnitID
-        {
-            pirate, archer
+            public UnitID id = UnitID.pirate;
+            public int level = 0;
+            public int requiredGold = 0;
+            public int requiredFish = 0;
+            public int requiredDiamonds = 0;
+            public int trainTime = 0;
+            public int health = 0;
+            public int housing = 0;
         }
 
         public class Unit
@@ -47,18 +106,15 @@ namespace AhmetsHub.ClashOfPirates
             public int health = 0;
             public int trainTime = 0;
             public float trainedTime = 0;
-        }
-
-        public class ServerUnit
-        {
-            public UnitID id = UnitID.pirate;
-            public int level = 0;
-            public int requiredGold = 0;
-            public int requiredFish = 0;
-            public int requiredDiamonds = 0;
-            public int trainTime = 0;
-            public int health = 0;
-            public int housing = 0;
+            public float moveSpeed = 1;
+            public float attackSpeed = 1;
+            public float attackRange = 1;
+            public float damage = 1;
+            public float splashRange = 0;
+            public float rangedSpeed = 5;
+            public TargetPriority priority = TargetPriority.none;
+            public UnitMoveType movement = UnitMoveType.ground;
+            public float priorityMultiplier = 1;
         }
 
         public class Building
@@ -80,6 +136,11 @@ namespace AhmetsHub.ClashOfPirates
             public DateTime constructionTime;
             public bool isConstructing = false;
             public int buildTime = 0;
+            public BuildingTargetType targetType = BuildingTargetType.none;
+            public float blindRange = 0;
+            public float splashRange = 0;
+            public float rangedSpeed = 5;
+            public float percentage = 0;
         }
 
         public class ServerBuilding
@@ -111,11 +172,34 @@ namespace AhmetsHub.ClashOfPirates
             return (T)xml.Deserialize(reader);
         }
 
+        public async static Task<string> SerializeAsync<T>(this T target)
+        {
+            Task<string> task = Task.Run(() =>
+            {
+                XmlSerializer xml = new XmlSerializer(typeof(T));
+                StringWriter writer = new StringWriter();
+                xml.Serialize(writer, target);
+                return writer.ToString();
+            });
+            return await task;
+        }
+
+        public async static Task<T> DesrializeAsync<T>(this string target)
+        {
+            Task<T> task = Task.Run(() =>
+            {
+                XmlSerializer xml = new XmlSerializer(typeof(T));
+                StringReader reader = new StringReader(target);
+                return (T)xml.Deserialize(reader);
+            });
+            return await task;
+        }
+
         public static BuildingCount GetBuildingLimits(int islandHallLevel, string globalID)
         {
-            for(int i = 0; i < buildingAvailability[islandHallLevel].buildings.Length; i++)
+            for (int i = 0; i < buildingAvailability[islandHallLevel].buildings.Length; i++)
             {
-                if(buildingAvailability[islandHallLevel].buildings[i].id == globalID)
+                if (buildingAvailability[islandHallLevel].buildings[i].id == globalID)
                 {
                     return buildingAvailability[islandHallLevel].buildings[i];
                 }
@@ -126,6 +210,31 @@ namespace AhmetsHub.ClashOfPirates
         public static BuildingCount GetIslandHallLimits(int targetIslandHallLevel)
         {
             return null;
+        }
+        
+        public static int GetInstantBuildRequiredDiamonds(int remainedSeconds)
+        {
+            int diamonds = 0;
+            if (remainedSeconds > 0)
+            {
+                if (remainedSeconds <= 60)
+                {
+                    diamonds = 1;
+                }
+                else if (remainedSeconds <= 3600)
+                {
+                    diamonds = (int)(0.00537f * ((float)remainedSeconds - 60f)) + 1;
+                }
+                else if (remainedSeconds <= 86400)
+                {
+                    diamonds = (int)(0.00266f * ((float)remainedSeconds - 3600f)) + 20;
+                }
+                else
+                {
+                    diamonds = (int)(0.00143f * ((float)remainedSeconds - 86400f)) + 260;
+                }
+            }
+            return diamonds;
         }
 
         public class BuildingAvailability

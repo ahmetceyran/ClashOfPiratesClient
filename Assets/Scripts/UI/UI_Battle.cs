@@ -97,7 +97,7 @@ namespace AhmetsHub.ClashOfPirates
             ClearUnitsOnGrid();
             ClearUnits();
 
-            UI_Main.instanse._grid.Clear();
+            //UI_Main.instanse._grid.Clear();
             for (int i = 0; i < battleBuildings.Count; i++)
             {
                 Building prefab = UI_Main.instanse.GetBuildingPrefab(battleBuildings[i].building.id);
@@ -266,7 +266,7 @@ namespace AhmetsHub.ClashOfPirates
                 ClearUnitsOnGrid();
                 ClearUnits();
             }
-            Player.inBattle = status;
+            //Player.inBattle = status;
             _active = status;
             _elements.SetActive(status);
         }

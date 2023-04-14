@@ -14,7 +14,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13
         }
 
         private void Start()
@@ -240,7 +240,7 @@ namespace AhmetsHub.ClashOfPirates
             Sender.TCP_Send(p);
         }
 
-        private void SyncData(Data.Player player)
+        public void SyncData(Data.Player player)
         {
             data = player;
 

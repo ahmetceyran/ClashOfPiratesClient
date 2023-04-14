@@ -5160,6 +5160,7 @@ MonoBehaviour:
   uiUnits:
   - {fileID: 825487939}
   - {fileID: 1677407867}
+  isOpen: 0
 --- !u!1 &1002422680
 GameObject:
   m_ObjectHideFlags: 0

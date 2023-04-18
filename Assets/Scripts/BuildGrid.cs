@@ -25,6 +25,18 @@ namespace AhmetsHub.ClashOfPirates
             return null;
         }
 
+        public void Clear()
+        {
+            for (int i = 0; i < buildings.Count; i++)
+            {
+                if(buildings[i])
+                {
+                    Destroy(buildings[i].gameObject);
+                }
+            }
+            buildings.Clear();
+        }
+
         public Vector3 GetStartPosition(int x, int y)
         {
             Vector3 position = transform.position;

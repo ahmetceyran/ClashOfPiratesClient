@@ -11,6 +11,7 @@ namespace AhmetsHub.ClashOfPirates
         public Data.Player data = new Data.Player();
         private static Player _instance = null; public static Player instanse {get {return _instance; }}
         public Data.InitializationData initializationData = new Data.InitializationData();
+        private bool _inBattle = false; public static bool inBattle { get { return instanse._inBattle; } set { instanse._inBattle = value; } }
 
         public enum RequestsID
         {

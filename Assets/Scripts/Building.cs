@@ -41,6 +41,18 @@ namespace AhmetsHub.ClashOfPirates
         private int _originalX = 0;
         private int _originalY = 0;
 
+        private void OnDestroy()
+        {
+            if(buildBar)
+            {
+                Destroy(buildBar.gameObject);
+            }
+            if(collectButton)
+            {
+                Destroy(collectButton.gameObject);
+            }
+        }
+
         private void Update()
         {
             AdjustUI();

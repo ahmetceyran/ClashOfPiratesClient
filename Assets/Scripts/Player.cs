@@ -38,15 +38,18 @@ namespace AhmetsHub.ClashOfPirates
         {
             if(connected)
             {
-                if(timer <= 0)
+                if(!_inBattle)
                 {
-                    updating = true;
-                    timer = syncTime;
-                    SendSyncRequest();
-                }
-                else
-                {
-                    timer -= Time.deltaTime;
+                    if(timer <= 0)
+                    {
+                        updating = true;
+                        timer = syncTime;
+                        SendSyncRequest();
+                    }
+                    else
+                    {
+                        timer -= Time.deltaTime;
+                    }
                 }
                 data.nowTime = data.nowTime.AddSeconds(Time.deltaTime);
             }
@@ -244,6 +247,11 @@ namespace AhmetsHub.ClashOfPirates
         public void SyncData(Data.Player player)
         {
             data = player;
+
+            if(_inBattle)
+            {
+                return;
+            }
 
             int gold = 0;
             int maxGold = 0;

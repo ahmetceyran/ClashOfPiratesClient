@@ -119,72 +119,86 @@ namespace AhmetsHub.ClashOfPirates
         private void ScreenClicked()
         {
             Vector2 position = _inputs.Main.PointerPosition.ReadValue<Vector2>();
-
             PointerEventData data = new PointerEventData(EventSystem.current);
             data.position = position;
             List<RaycastResult> results = new List<RaycastResult>();
             EventSystem.current.RaycastAll(data, results);
 
-            if(results.Count <= 0)
+            if(UI_Main.instanse.isActive)
             {
-                bool found = false;
-                Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
-                for(int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
+                if(results.Count <= 0)
                 {
-                    if (UI_Main.instanse._grid.IsWorldPositionIsOnPlane(planePosition, UI_Main.instanse._grid.buildings[i].currentX, UI_Main.instanse._grid.buildings[i].currentY, UI_Main.instanse._grid.buildings[i].rows, UI_Main.instanse._grid.buildings[i].columns))
+                    bool found = false;
+                    Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
+                    for(int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
                     {
-                        found = true;
-                        UI_Main.instanse._grid.buildings[i].Selected();
-                        break;
+                        if (UI_Main.instanse._grid.IsWorldPositionIsOnPlane(planePosition, UI_Main.instanse._grid.buildings[i].currentX, UI_Main.instanse._grid.buildings[i].currentY, UI_Main.instanse._grid.buildings[i].rows, UI_Main.instanse._grid.buildings[i].columns))
+                        {
+                            found = true;
+                            UI_Main.instanse._grid.buildings[i].Selected();
+                            break;
+                        }
+                    }
+                    if(!found)
+                    {
+                        if(Building.selectedInstanse != null)
+                        {
+                            Building.selectedInstanse.Deselected();
+                        }
                     }
                 }
-                if(!found)
+                else
                 {
                     if(Building.selectedInstanse != null)
                     {
+                        //bool handled = false;
+                        for(int i = 0; i < results.Count; i++)
+                        {
+                            if(results[i].gameObject == UI_BuildingOptions.instanse.infoButton.gameObject)
+                            {
+                                //handled = true;
+                                // todo: show info
+                            }
+                            else if(results[i].gameObject == UI_BuildingOptions.instanse.uupgradeButton.gameObject)
+                            {
+                                //handled = true;
+                                Packet packet = new Packet();
+                                packet.Write((int)Player.RequestsID.PREUPGRADE);
+                                packet.Write(Building.selectedInstanse.data.databaseID);
+                                Sender.TCP_Send(packet);
+                            }
+                            else if(results[i].gameObject == UI_BuildingOptions.instanse.instantButton.gameObject)
+                            {
+                                //handled = true;
+                                Packet packet = new Packet();
+                                packet.Write((int)Player.RequestsID.INSTANTBUILD);
+                                packet.Write(Building.selectedInstanse.data.databaseID);
+                                Sender.TCP_Send(packet);
+                            }
+                            else if(results[i].gameObject == UI_BuildingOptions.instanse.trainButton.gameObject)
+                            {
+                                //handled = true;
+                                UI_Train.instanse.SetStatus(true);
+                            }
+                        }
+                        /*if(handled)
+                        {
+                            return;
+                        }*/
                         Building.selectedInstanse.Deselected();
                     }
                 }
             }
-            else
+            else if(UI_Battle.instanse.isActive)
             {
-                if(Building.selectedInstanse != null)
+                if(results.Count <= 0 && UI_Battle.instanse.selectedUnit >= 0)
                 {
-                    //bool handled = false;
-                    for(int i = 0; i < results.Count; i++)
+                    Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
+                    planePosition = UI_Main.instanse._grid.transform.InverseTransformPoint(planePosition);
+                    if(planePosition.x >= 0 && planePosition.x < Data.gridSize && planePosition.z >= 0 && planePosition.z < Data.gridSize)
                     {
-                        if(results[i].gameObject == UI_BuildingOptions.instanse.infoButton.gameObject)
-                        {
-                            //handled = true;
-                            // todo: show info
-                        }
-                        else if(results[i].gameObject == UI_BuildingOptions.instanse.uupgradeButton.gameObject)
-                        {
-                            //handled = true;
-                            Packet packet = new Packet();
-                            packet.Write((int)Player.RequestsID.PREUPGRADE);
-                            packet.Write(Building.selectedInstanse.data.databaseID);
-                            Sender.TCP_Send(packet);
-                        }
-                        else if(results[i].gameObject == UI_BuildingOptions.instanse.instantButton.gameObject)
-                        {
-                            //handled = true;
-                            Packet packet = new Packet();
-                            packet.Write((int)Player.RequestsID.INSTANTBUILD);
-                            packet.Write(Building.selectedInstanse.data.databaseID);
-                            Sender.TCP_Send(packet);
-                        }
-                        else if(results[i].gameObject == UI_BuildingOptions.instanse.trainButton.gameObject)
-                        {
-                            //handled = true;
-                            UI_Train.instanse.SetStatus(true);
-                        }
+                        UI_Battle.instanse.PlaceUnit((int)planePosition.x, (int)planePosition.z);
                     }
-                    /*if(handled)
-                    {
-                        return;
-                    }*/
-                    Building.selectedInstanse.Deselected();
                 }
             }
         }
@@ -200,7 +214,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void MoveStarted()
         {
-            if (UI_Main.instanse.isActive)
+            if (UI_Main.instanse.isActive || UI_Battle.instanse.isActive)
             {
                 if (_building)
                 {
@@ -249,7 +263,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void ZoomStarted()
         {
-            if (UI_Main.instanse.isActive)
+            if (UI_Main.instanse.isActive || UI_Battle.instanse.isActive)
             {
                 Vector2 touch0 = _inputs.Main.TouchPosition0.ReadValue<Vector2>();
                 Vector2 touch1 = _inputs.Main.TouchPosition1.ReadValue<Vector2>();

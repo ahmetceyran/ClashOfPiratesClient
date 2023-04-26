@@ -14,6 +14,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] public TextMeshProUGUI _fishText = null;
         [SerializeField] public TextMeshProUGUI _diamondsText = null;
         [SerializeField] private Button _shopButton = null;
+        [SerializeField] private Button _battleButton = null;
 
         [SerializeField] public BuildGrid _grid = null;
         [SerializeField] public Building[] _buildingPrefabs = null;
@@ -38,17 +39,32 @@ namespace AhmetsHub.ClashOfPirates
         private void Start()
         {
             _shopButton.onClick.AddListener(ShopButtonClicked);
+            _battleButton.onClick.AddListener(BattleButtonClicked);
         }
 
         private void ShopButtonClicked()
         {
-            UI_Build.instanse.Cancel();
             UI_Shop.instanse.SetStatus(true);
             SetStatus(false);
         }
 
+        private void BattleButtonClicked()
+        {
+            UI_Search.instanse.SetStatus(true);
+            SetStatus(false);
+        }
+
+        private void OnLeave()
+        {
+            UI_Build.instanse.Cancel();
+        }
+
         public void SetStatus(bool status)
         {
+            if(!status)
+            {
+                OnLeave();
+            }
             _active = status;
             _elements.SetActive(status);
         }

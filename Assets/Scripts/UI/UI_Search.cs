@@ -52,7 +52,7 @@ namespace AhmetsHub.ClashOfPirates
             Sender.TCP_Send(packet);
         }
 
-        public void FndResponded(long target, Data.OpponentData opponent)
+        public void FindResponded(long target, Data.OpponentData opponent)
         {
             if(target > 0 && opponent != null && target != lastTarget)
             {

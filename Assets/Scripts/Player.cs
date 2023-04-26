@@ -233,6 +233,21 @@ namespace AhmetsHub.ClashOfPirates
                         RushSyncRequest();
                     }
                     break;
+                case RequestsID.BATTLEFIND:
+                    long target = packet.ReadLong();
+                    Data.OpponentData opponent = null;
+                    if(target > 0)
+                    {
+                        string d = packet.ReadString();
+                        opponent = Data.Desrialize<Data.OpponentData>(d);
+                    }
+                    UI_Search.instanse.FindResponded(target, opponent);
+                    break;
+                case RequestsID.BATTLESTART:
+                    bool matched = packet.ReadBool();
+                    bool attack = packet.ReadBool();
+                    UI_Battle.instanse.StartBattleConfirm(matched && attack);
+                    break;
             }
         }
 

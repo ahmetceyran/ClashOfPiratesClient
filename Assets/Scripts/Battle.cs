@@ -9,7 +9,6 @@ namespace AhmetsHub.ClashOfPirates
     {
 
         public long id = 0;
-        //public Data.BattleReport report = new Data.BattleReport();
         public DateTime baseTime = DateTime.Now;
         public int frameCount = 0;
         public long defender = 0;
@@ -23,12 +22,87 @@ namespace AhmetsHub.ClashOfPirates
         private AStarSearch unlimitedSearch = null;
         private List<Tile> blockedTiles = new List<Tile>();
         private List<Projectile> projectiles = new List<Projectile>();
-        public float percentage = 0;
+        public double percentage = 0;
+        public bool end = false;
+        public bool surrender = false;
+        public int surrenderFrame = 0;
+        public float duration = 0;
+
+        public int unitsDeployed = 0;
+        public bool townhallDestroyed = false;
+        public bool fiftyPercentDestroyed = false;
+        public bool completelyDestroyed = false;
+
+        public int winTrophies = 0;
+        public int loseTrophies = 0;
+
+        public (int, int, int, int, int, int) GetlootedResources()
+        {
+            int totalGold = 0;
+            int totalElixir = 0;
+            int totalDark = 0;
+            int lootedGold = 0;
+            int lootedElixir = 0;
+            int lootedDark = 0;
+            for (int i = 0; i < _buildings.Count; i++)
+            {
+                switch (_buildings[i].building.id)
+                {
+                    case Data.BuildingID.islandhall:
+                        totalGold += _buildings[i].lootGoldStorage;
+                        lootedGold += _buildings[i].lootedGold;
+                        totalElixir += _buildings[i].lootElixirStorage;
+                        lootedElixir += _buildings[i].lootedElixir;
+                        totalDark += _buildings[i].lootDarkStorage;
+                        lootedDark += _buildings[i].lootedDark;
+                        break;
+                    case Data.BuildingID.goldmine:
+                    case Data.BuildingID.goldstorage:
+                        totalGold += _buildings[i].lootGoldStorage;
+                        lootedGold += _buildings[i].lootedGold;
+                        break;
+                    case Data.BuildingID.fisher:
+                    case Data.BuildingID.fishstorage:
+                        totalElixir += _buildings[i].lootElixirStorage;
+                        lootedElixir += _buildings[i].lootedElixir;
+                        break;
+                    /*case Data.BuildingID.clancastle:
+
+                        break;*/
+                }
+            }
+            return (lootedGold, lootedElixir, lootedDark, totalGold, totalElixir, totalDark);
+        }
+
+        public int stars { get { int s = 0; if (townhallDestroyed) { s++; } if (fiftyPercentDestroyed) { s++; } if (completelyDestroyed) { s++; } return s; } }
 
         public delegate void UnitSpawned(long id);
         public delegate void AttackCallback(long index, BattleVector2 target);
         public delegate void IndexCallback(long index);
         public delegate void FloatCallback(long index, float value);
+        public delegate void DoubleCallback(long index, double value);
+        public delegate void BlankCallback();
+
+        public int GetTrophies()
+        {
+            int s = stars;
+            if(s > 0)
+            {
+                if(s >= 3)
+                {
+                    return winTrophies;
+                }
+                else
+                {
+                    int t = (int)Math.Floor((double)winTrophies / (double)s);
+                    return t * s;
+                }
+            }
+            else
+            {
+                return loseTrophies * -1;
+            }
+        }
 
         public class Projectile
         {
@@ -151,12 +225,22 @@ namespace AhmetsHub.ClashOfPirates
             public float health = 0;
             public int target = -1;
             public double attackTimer = 0;
-            public float percentage = 0;
+            public double percentage = 0;
             public BattleVector2 worldCenterPosition;
             public AttackCallback attackCallback = null;
-            public FloatCallback destroyCallback = null;
+            public DoubleCallback destroyCallback = null;
             public FloatCallback damageCallback = null;
-            public void TakeDamage(float damage, ref Grid grid, ref List<Tile> blockedTiles, ref float percentage)
+            public BlankCallback starCallback = null;
+
+            public int lootGoldStorage = 0;
+            public int lootElixirStorage = 0;
+            public int lootDarkStorage = 0;
+
+            public int lootedGold = 0;
+            public int lootedElixir = 0;
+            public int lootedDark = 0;
+
+            public void TakeDamage(float damage, ref Grid grid, ref List<Tile> blockedTiles, ref double percentage, ref bool fiftySatar, ref bool hallStar, ref bool allStar)
             {
                 if (health <= 0) { return; }
                 health -= damage;
@@ -165,6 +249,12 @@ namespace AhmetsHub.ClashOfPirates
                     damageCallback.Invoke(building.databaseID, damage);
                 }
                 if (health < 0) { health = 0; }
+
+                double loot = 1d - ((double)health / (double)building.health);
+                if (lootGoldStorage > 0) { lootedGold = (int)Math.Floor(lootGoldStorage * loot); }
+                if (lootElixirStorage > 0) { lootedElixir = (int)Math.Floor(lootElixirStorage * loot); }
+                if (lootDarkStorage > 0) { lootedDark = (int)Math.Floor(lootDarkStorage * loot); }
+
                 if (health <= 0)
                 {
                     for (int x = building.x; x < building.x + building.columns; x++)
@@ -190,12 +280,40 @@ namespace AhmetsHub.ClashOfPirates
                     {
                         destroyCallback.Invoke(building.databaseID, this.percentage);
                     }
+                    if(building.id == Data.BuildingID.islandhall && !hallStar)
+                    {
+                        hallStar = true;
+                        if(starCallback != null)
+                        {
+                            starCallback.Invoke();
+                        }
+                    }
+                    int p = (int)Math.Floor(percentage);
+                    if(p >= 50 && !fiftySatar)
+                    {
+                        fiftySatar = true;
+                        if (starCallback != null)
+                        {
+                            starCallback.Invoke();
+                        }
+                    }
+                    if (p >= 100 && !allStar)
+                    {
+                        allStar = true;
+                        if (starCallback != null)
+                        {
+                            starCallback.Invoke();
+                        }
+                    }
                 }
             }
             public void Initialize()
             {
                 health = building.health;
                 percentage = building.percentage;
+                lootedGold = 0;
+                lootedElixir = 0;
+                lootedDark = 0;
             }
         }
 
@@ -211,11 +329,19 @@ namespace AhmetsHub.ClashOfPirates
             public FloatCallback healCallback = null;
         }
 
-        public void Initialize(List<Building> buildings, DateTime time, AttackCallback attackCallback = null, FloatCallback destroyCallback = null, FloatCallback damageCallback = null) // ok
+        public void Initialize(List<Building> buildings, DateTime time, AttackCallback attackCallback = null, DoubleCallback destroyCallback = null, FloatCallback damageCallback = null, BlankCallback starGained = null) // ok
         {
             baseTime = time;
+            duration = Data.battleDuration;
             frameCount = 0;
             percentage = 0;
+            unitsDeployed = 0;
+            fiftyPercentDestroyed = false;
+            townhallDestroyed = false;
+            completelyDestroyed = false;
+            end = false;
+            surrender = false;
+
             _buildings = buildings;
             grid = new Grid(Data.gridSize, Data.gridSize);
             unlimitedGrid = new Grid(Data.gridSize, Data.gridSize);
@@ -226,6 +352,7 @@ namespace AhmetsHub.ClashOfPirates
                 _buildings[i].attackCallback = attackCallback;
                 _buildings[i].destroyCallback = destroyCallback;
                 _buildings[i].damageCallback = damageCallback;
+                _buildings[i].starCallback = starGained;
 
                 _buildings[i].Initialize();
                 _buildings[i].worldCenterPosition = new BattleVector2((_buildings[i].building.x + (_buildings[i].building.columns / 2f)) * Data.gridCellSize, (_buildings[i].building.y + (_buildings[i].building.rows / 2f)) * Data.gridCellSize);
@@ -259,7 +386,32 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        public bool CanAddUnit(int x, int y) // ok
+        public bool IsAliveUnitsOnGrid()
+        {
+            for (int i = 0; i < _units.Count; i++)
+            {
+                if(_units[i].health > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool CanBattleGoOn()
+        {
+            if (Math.Abs(percentage - 1d) > 0.0001d && IsAliveUnitsOnGrid())
+            {
+                double time = (float)frameCount * Data.battleFrameRate;
+                if (time < duration)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool CanAddUnit(int x, int y)
         {
             for (int i = 0; i < _buildings.Count; i++)
             {
@@ -288,8 +440,12 @@ namespace AhmetsHub.ClashOfPirates
             return true;
         }
 
-        public void AddUnit(Data.Unit unit, int x, int y, UnitSpawned callback = null, AttackCallback attackCallback = null, IndexCallback dieCallback = null, FloatCallback damageCallback = null, FloatCallback healCallback = null) // ok
+        public void AddUnit(Data.Unit unit, int x, int y, UnitSpawned callback = null, AttackCallback attackCallback = null, IndexCallback dieCallback = null, FloatCallback damageCallback = null, FloatCallback healCallback = null)
         {
+            if (end)
+            {
+                return;
+            }
             UnitToAdd unitToAdd = new UnitToAdd();
             unitToAdd.callback = callback;
             Unit battleUnit = new Unit();
@@ -304,12 +460,6 @@ namespace AhmetsHub.ClashOfPirates
             unitToAdd.x = x;
             unitToAdd.y = y;
             _unitsToAdd.Add(unitToAdd);
-            /*
-            if(time > updateTime)
-            {
-                updateTime = time;
-            }
-            */
         }
 
         public void ExecuteFrame()
@@ -319,6 +469,7 @@ namespace AhmetsHub.ClashOfPirates
             {
                 if (CanAddUnit(_unitsToAdd[i].x, _unitsToAdd[i].y))
                 {
+                    unitsDeployed += _unitsToAdd[i].unit.unit.hosing;
                     _units.Insert(addIndex, _unitsToAdd[i].unit);
                     if (_unitsToAdd[i].callback != null)
                     {
@@ -390,7 +541,7 @@ namespace AhmetsHub.ClashOfPirates
                         }
                         else
                         {
-                            _buildings[projectiles[i].target].TakeDamage(projectiles[i].damage, ref grid, ref blockedTiles, ref percentage);
+                            _buildings[projectiles[i].target].TakeDamage(projectiles[i].damage, ref grid, ref blockedTiles, ref percentage, ref fiftyPercentDestroyed, ref townhallDestroyed, ref completelyDestroyed);
                         }
                         projectiles.RemoveAt(i);
                     }
@@ -466,7 +617,7 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private bool FindTargetForBuilding(int index) // ok
+        private bool FindTargetForBuilding(int index)
         {
             for (int i = 0; i < _units.Count; i++)
             {
@@ -495,7 +646,7 @@ namespace AhmetsHub.ClashOfPirates
             return false;
         }
 
-        private bool IsUnitInRange(int unitIndex, int buildingIndex) // ok
+        private bool IsUnitInRange(int unitIndex, int buildingIndex)
         {
             float distance = BattleVector2.Distance(_buildings[buildingIndex].worldCenterPosition, _units[unitIndex].position);
             if (distance <= _buildings[buildingIndex].building.radius)
@@ -509,7 +660,7 @@ namespace AhmetsHub.ClashOfPirates
             return false;
         }
 
-        private void HandleUnit(int index, double deltaTime) // ok
+        private void HandleUnit(int index, double deltaTime)
         {
             if(_units[index].unit.id == Data.UnitID.healer)
             {
@@ -674,7 +825,7 @@ namespace AhmetsHub.ClashOfPirates
                                     }
                                     else
                                     {
-                                        _buildings[_units[index].target].TakeDamage(_units[index].unit.damage * multiplier, ref grid, ref blockedTiles, ref percentage);
+                                        _buildings[_units[index].target].TakeDamage(_units[index].unit.damage * multiplier, ref grid, ref blockedTiles, ref percentage, ref fiftyPercentDestroyed, ref townhallDestroyed, ref completelyDestroyed);
                                     }
                                     _units[index].attackTimer -= _units[index].unit.attackSpeed;
                                     if (_units[index].attackCallback != null)
@@ -707,11 +858,11 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private void FindHealerTargets(int index) // ok
+        private void FindHealerTargets(int index)
         {
             int target = -1;
             float distance = 99999;
-            // int unitsCover = 0;
+            // TODO: Larger mass of units is priority
             for (int i = 0; i < _units.Count; i++)
             {
                 if(_units[i].health <= 0 || i == index || _units[i].health >= _units[i].unit.health || _units[i].unit.movement == Data.UnitMoveType.fly)
@@ -731,7 +882,7 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private void ListUnitTargets(int index, Data.TargetPriority priority) // ok
+        private void ListUnitTargets(int index, Data.TargetPriority priority)
         {
             _units[index].resourceTargets.Clear();
             _units[index].defenceTargets.Clear();
@@ -742,7 +893,7 @@ namespace AhmetsHub.ClashOfPirates
             }
             for (int i = 0; i < _buildings.Count; i++)
             { 
-                if(_buildings[i].health <= 0 || priority != _units[index].unit.priority || !IsBuildingCanBeAttacked(_buildings[i].building.id))
+                if(_buildings[i].health <= 0 || _buildings[i].building.id == Data.BuildingID.wall || priority != _units[index].unit.priority || !IsBuildingCanBeAttacked(_buildings[i].building.id))
                 {
                     continue;
                 }
@@ -777,7 +928,7 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private void FindTargets(int index, Data.TargetPriority priority) // ok
+        private void FindTargets(int index, Data.TargetPriority priority)
         {
             ListUnitTargets(index, priority);
             if (priority == Data.TargetPriority.defenses)
@@ -818,7 +969,7 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private void AssignTarget(int index, ref Dictionary<int, float> targets, bool wallsPriority = false) // ok
+        private void AssignTarget(int index, ref Dictionary<int, float> targets, bool wallsPriority = false)
         {
             if (wallsPriority)
             {
@@ -838,7 +989,7 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private (int, Path) GetPathToWall(int unitIndex, ref Dictionary<int, float> targets) // ok
+        private (int, Path) GetPathToWall(int unitIndex, ref Dictionary<int, float> targets)
         {
             BattleVector2Int unitGridPosition = WorldToGridPosition(_units[unitIndex].position);
             List<Path> tiles = new List<Path>();
@@ -907,7 +1058,7 @@ namespace AhmetsHub.ClashOfPirates
             return (-1, null);
         }
 
-        private (int, Path) GetPathToBuilding(int buildingIndex, int unitIndex) // ok
+        private (int, Path) GetPathToBuilding(int buildingIndex, int unitIndex)
         {
             if (_buildings[buildingIndex].building.id == Data.BuildingID.wall || _buildings[buildingIndex].building.id == Data.BuildingID.decoration || _buildings[buildingIndex].building.id == Data.BuildingID.obstacle)
             {
@@ -1079,7 +1230,7 @@ namespace AhmetsHub.ClashOfPirates
             return (-1, null);
         }
 
-        private bool IsBuildingInRange(int unitIndex, int buildingIndex) // ok
+        private bool IsBuildingInRange(int unitIndex, int buildingIndex)
         {
             for (int x = _buildings[buildingIndex].building.x; x < _buildings[buildingIndex].building.x + _buildings[buildingIndex].building.columns; x++)
             {
@@ -1095,7 +1246,7 @@ namespace AhmetsHub.ClashOfPirates
             return false;
         }
 
-        private static float GetPathLength(IList<Cell> path, bool includeCellSize = true) // ok
+        private static float GetPathLength(IList<Cell> path, bool includeCellSize = true)
         {
             float length = 0;
             if(path != null && path.Count > 1)
@@ -1139,7 +1290,7 @@ namespace AhmetsHub.ClashOfPirates
             }
             public static bool IsValid(ref List<Cell> points, Vector2Int start, Vector2Int end)
             {
-                if (!points.Any() || !points.Last().Location.Equals(end) || !points.First().Location.Equals(start))
+                if (points == null || !points.Any() || !points.Last().Location.Equals(end) || !points.First().Location.Equals(start))
                 {
                     return false;
                 }
@@ -1153,7 +1304,7 @@ namespace AhmetsHub.ClashOfPirates
             // public float blocksHealth = 0;
         }
 
-        private static BattleVector2 GetPathPosition(IList<Cell> path, float t) // ok
+        private static BattleVector2 GetPathPosition(IList<Cell> path, float t)
         {
             if(t < 0) { t = 0; }
             if(t > 1) { t = 1; }
@@ -1178,12 +1329,12 @@ namespace AhmetsHub.ClashOfPirates
             return GridToWorldPosition(new BattleVector2Int(path[0].Location.X, path[0].Location.Y));
         }
 
-        private static BattleVector2 GridToWorldPosition(BattleVector2Int position) // ok
+        private static BattleVector2 GridToWorldPosition(BattleVector2Int position)
         {
             return new BattleVector2(position.x * Data.gridCellSize + Data.gridCellSize / 2f, position.y * Data.gridCellSize + Data.gridCellSize / 2f);
         }
 
-        private static BattleVector2Int WorldToGridPosition(BattleVector2 position) // ok
+        private static BattleVector2Int WorldToGridPosition(BattleVector2 position)
         {
             return new BattleVector2Int((int)Math.Floor(position.x / Data.gridCellSize), (int)Math.Floor(position.y / Data.gridCellSize));
         }

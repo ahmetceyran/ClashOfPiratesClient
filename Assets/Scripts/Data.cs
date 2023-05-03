@@ -19,10 +19,10 @@ namespace AhmetsHub.ClashOfPirates
 
         public class Player
         {
-            public int gold = 0;
-            public int fish = 0;
             public int diamonds = 0;
+            public int trophies = 0;
             public DateTime nowTime;
+            public DateTime shield;
             public List<Building> buildings = new List<Building>();
             public List<Unit> units = new List<Unit>();
         }
@@ -49,7 +49,62 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum BuildingID
         {
-            islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut, armycamp, barracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap
+            islandhall, goldmine, goldstorage, fisher, fishstorage, buildershut, armycamp, barracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap, clancastle
+        }
+
+        public static int GetStorageGoldAndFishLoot(int islandhallLevel, float storage)
+        {
+            double p = 0;
+            switch (islandhallLevel)
+            {
+                case 1: case 2: case 3: case 4: case 5: case 6: p = 0.2d; break;
+                case 7: p = 0.18d; break;
+                case 8: p = 0.16d; break;
+                case 9: p = 0.14d; break;
+                case 10: p = 0.12d; break;
+                default: p = 0.1d; break;
+            }
+            return (int)Math.Floor(storage * p);
+        }
+
+        public static int GetMinesGoldAndFishLoot(int islandhallLevel, float storage)
+        {
+            return (int)Math.Floor(storage * 0.5d);
+        }
+
+
+        public static (int, int) GetBattleTrophies(int attackerTrophies, int defendderTrophies)
+        {
+            int win = 0;
+            int lose = 0;
+            if (attackerTrophies == defendderTrophies)
+            {
+                win = 30;
+                lose = 20;
+            }
+            else
+            {
+                double delta = Math.Abs(attackerTrophies - defendderTrophies);
+                if (attackerTrophies > defendderTrophies)
+                {
+                    win = 30 - (int)Math.Floor(delta * (28d / 600d));
+                    lose = 20 + (int)Math.Floor(delta * (19d / 600d));
+                    if (win < 2)
+                    {
+                        win = 2;
+                    }
+                }
+                else
+                {
+                    win = 30 + (int)Math.Floor(delta * (28d / 600d));
+                    lose = 20 - (int)Math.Floor(delta * (19d / 600d));
+                    if (lose < 1)
+                    {
+                        lose = 1;
+                    }
+                }
+            }
+            return (win, lose);
         }
 
         public class BattleFrame
@@ -63,11 +118,13 @@ namespace AhmetsHub.ClashOfPirates
             public long id = 0;
             public int x = 0;
             public int y = 0;
+            public Unit unit = null;
         }
 
         public class BattleData
         {
             public Battle battle = null;
+            public List<BattleFrame> savedFrames = new List<BattleFrame>();
             public List<BattleFrame> frames = new List<BattleFrame>();
         }
 
@@ -75,6 +132,14 @@ namespace AhmetsHub.ClashOfPirates
         {
             public long id = 0;
             public List<Building> buildings = null;
+        }
+
+        public class BattleStartBuildingData
+        {
+            public BuildingID id = BuildingID.islandhall;
+            public long databaseID = 0;
+            public int lootGoldStorage = 0;
+            public int lootFishStorage = 0;
         }
 
         public class InitializationData
@@ -126,11 +191,14 @@ namespace AhmetsHub.ClashOfPirates
             public int y = 0;
             public int columns = 0;
             public int rows = 0;
-            public int storage = 0;
+            public int goldStorage = 0;
+            public int fishStorage = 0;
             public DateTime boost;
             public int health = 100;
             public float damage = 0;
             public int capacity = 0;
+            public int goldCapacity = 0;
+            public int fishCapacity = 0;
             public float speed = 0;
             public float radius = 0;
             public DateTime constructionTime;
@@ -140,7 +208,7 @@ namespace AhmetsHub.ClashOfPirates
             public float blindRange = 0;
             public float splashRange = 0;
             public float rangedSpeed = 5;
-            public float percentage = 0;
+            public double percentage = 0;
         }
 
         public class ServerBuilding
@@ -207,12 +275,12 @@ namespace AhmetsHub.ClashOfPirates
             return null;
         }
 
-        public static BuildingCount GetIslandHallLimits(int targetIslandHallLevel)
+        public static BuildingCount GetTownHallLimits(int targetIslandHallLevel)
         {
             return null;
         }
-        
-        public static int GetInstantBuildRequiredDiamonds(int remainedSeconds)
+
+        public static int GetInstantBuildRequiredGems(int remainedSeconds)
         {
             int diamonds = 0;
             if (remainedSeconds > 0)
@@ -262,7 +330,7 @@ namespace AhmetsHub.ClashOfPirates
                 level = 1,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 1, maxLevel = 2},
                     new BuildingCount { id = "fisher", count = 1, maxLevel = 2},
@@ -278,7 +346,7 @@ namespace AhmetsHub.ClashOfPirates
                 level = 2,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 2, maxLevel = 4},
                     new BuildingCount { id = "fisher", count = 2, maxLevel = 4},
@@ -296,7 +364,7 @@ namespace AhmetsHub.ClashOfPirates
                 level = 3,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 3, maxLevel = 6},
                     new BuildingCount { id = "fisher", count = 3, maxLevel = 6},
@@ -318,7 +386,7 @@ namespace AhmetsHub.ClashOfPirates
                 level = 4,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 4, maxLevel = 8},
                     new BuildingCount { id = "fisher", count = 4, maxLevel = 8},
@@ -342,7 +410,7 @@ namespace AhmetsHub.ClashOfPirates
                 level = 5,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 5, maxLevel = 10},
                     new BuildingCount { id = "fisher", count = 5, maxLevel = 10},
@@ -369,7 +437,7 @@ namespace AhmetsHub.ClashOfPirates
                 level = 6,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 6, maxLevel = 10},
                     new BuildingCount { id = "fisher", count = 6, maxLevel = 10},
@@ -398,14 +466,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 7,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 6, maxLevel = 11},
                     new BuildingCount { id = "fisher", count = 6, maxLevel = 11},
-                    new BuildingCount { id = "darkelixirmine", count = 1, maxLevel = 3},
                     new BuildingCount { id = "goldstorage", count = 2, maxLevel = 11},
                     new BuildingCount { id = "fishstorage", count = 2, maxLevel = 11},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 2},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 3},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 6},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 9},
@@ -433,14 +499,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 8,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 6, maxLevel = 12},
                     new BuildingCount { id = "fisher", count = 6, maxLevel = 12},
-                    new BuildingCount { id = "darkelixirmine", count = 2, maxLevel = 3},
                     new BuildingCount { id = "goldstorage", count = 3, maxLevel = 11},
                     new BuildingCount { id = "fishstorage", count = 3, maxLevel = 11},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 4},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 4},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 6},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 10},
@@ -471,14 +535,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 9,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 12},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 12},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 6},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 11},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 11},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 6},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 5},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 7},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 11},
@@ -511,14 +573,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 10,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 13},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 13},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 7},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 11},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 11},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 6},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 6},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 8},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 12},
@@ -552,14 +612,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 11,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 14},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 14},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 8},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 12},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 12},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 6},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 7},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 9},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 13},
@@ -596,14 +654,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 12,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 15},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 15},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 9},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 13},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 13},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 7},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 8},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 10},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 14},
@@ -641,14 +697,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 13,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 15},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 15},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 9},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 14},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 14},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 8},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 9},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 11},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 15},
@@ -688,14 +742,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 14,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 15},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 15},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 9},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 15},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 15},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 9},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 10},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 11},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 16},
@@ -736,14 +788,12 @@ namespace AhmetsHub.ClashOfPirates
                 level = 15,
                 buildings = new BuildingCount[]
                 {
-                    new BuildingCount { id = "islandhall", count = 1, maxLevel = 15},
+                    new BuildingCount { id = "townhall", count = 1, maxLevel = 15},
                     new BuildingCount { id = "buildershut", count = 5, maxLevel = 1},
                     new BuildingCount { id = "goldmine", count = 7, maxLevel = 15},
                     new BuildingCount { id = "fisher", count = 7, maxLevel = 15},
-                    new BuildingCount { id = "darkelixirmine", count = 3, maxLevel = 9},
                     new BuildingCount { id = "goldstorage", count = 4, maxLevel = 16},
                     new BuildingCount { id = "fishstorage", count = 4, maxLevel = 16},
-                    new BuildingCount { id = "darkelixirstorage", count = 1, maxLevel = 10},
                     new BuildingCount { id = "clancastle", count = 1, maxLevel = 11},
                     new BuildingCount { id = "armycamp", count = 4, maxLevel = 12},
                     new BuildingCount { id = "barracks", count = 1, maxLevel = 16},

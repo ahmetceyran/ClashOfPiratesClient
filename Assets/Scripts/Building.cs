@@ -67,7 +67,7 @@ namespace AhmetsHub.ClashOfPirates
                     case Data.BuildingID.islandhall:
                         break;
                     case Data.BuildingID.goldmine:
-                        if(data.storage >= Data.minGoldCollect)
+                        if(data.goldStorage >= Data.minGoldCollect)
                         {
                             collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
                         }
@@ -77,7 +77,7 @@ namespace AhmetsHub.ClashOfPirates
                         }
                         break;
                     case Data.BuildingID.fisher:
-                        if(data.storage >= Data.minFishCollect)
+                        if(data.fishStorage >= Data.minFishCollect)
                         {
                             collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
                         }

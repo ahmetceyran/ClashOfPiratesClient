@@ -14,18 +14,23 @@ namespace AhmetsHub.ClashOfPirates
         Battle battle = null;
         private bool isStarted = false;
         private bool readyToStart = false;
+        [SerializeField] private GameObject _endPanel = null;
         [SerializeField] public TextMeshProUGUI _timerText = null;
         [SerializeField] public TextMeshProUGUI _percentageText = null;
+        [SerializeField] public TextMeshProUGUI _lootGoldText = null;
+        [SerializeField] public TextMeshProUGUI _lootFishText = null;
         [SerializeField] private UI_Bar healthBarPrefab = null;
         [SerializeField] private RectTransform healthBarGrid = null;
         [SerializeField] private BattleUnit[] battleUnits = null;
         [SerializeField] private Button _findButton = null;
         [SerializeField] private Button _closeButton = null;
+        [SerializeField] private Button _okButton = null;
         private List<BattleUnit> unitsOnGrid = new List<BattleUnit>();
         public List<BuildingOnGrid> buildingsOnGrid = new List<BuildingOnGrid>();
         private DateTime baseTime;
         private List<UnitToAdd> toAdd = new List<UnitToAdd>();
         private long target = 0;
+        private bool surrender = false;
 
         public class BuildingOnGrid
         {
@@ -52,6 +57,12 @@ namespace AhmetsHub.ClashOfPirates
         {
             _closeButton.onClick.AddListener(Close);
             _findButton.onClick.AddListener(Find);
+            _okButton.onClick.AddListener(CloseEndPanel);
+        }
+
+        private void CloseEndPanel()
+        {
+            Close();
         }
 
         private void Close()
@@ -84,10 +95,40 @@ namespace AhmetsHub.ClashOfPirates
             target = defender;
             startbuildings = buildings;
             battleBuildings.Clear();
+
+            int islandhallLevel = 1;
+            for (int i = 0; i < buildings.Count; i++)
+            {
+                if (buildings[i].id == Data.BuildingID.islandhall)
+                {
+                    islandhallLevel = buildings[i].level;
+                    break;
+                }
+            }
+
             for (int i = 0; i < buildings.Count; i++)
             {
                 Battle.Building building = new Battle.Building();
                 building.building = buildings[i];
+                switch (building.building.id)
+                {
+                    case Data.BuildingID.islandhall:
+                        building.lootGoldStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.goldStorage);
+                        building.lootFishStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.fishStorage);
+                        break;
+                    case Data.BuildingID.goldmine:
+                        building.lootGoldStorage = Data.GetMinesGoldAndFishLoot(islandhallLevel, building.building.goldStorage);
+                        break;
+                    case Data.BuildingID.goldstorage:
+                        building.lootGoldStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.goldStorage);
+                        break;
+                    case Data.BuildingID.fisher:
+                        building.lootFishStorage = Data.GetMinesGoldAndFishLoot(islandhallLevel, building.building.fishStorage);
+                        break;
+                    case Data.BuildingID.fishstorage:
+                        building.lootFishStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.fishStorage);
+                        break;
+                }
                 battleBuildings.Add(building);
             }
 
@@ -153,9 +194,18 @@ namespace AhmetsHub.ClashOfPirates
             battle.Initialize(battleBuildings, DateTime.Now, BuildingAttackCallBack, BuildingDestroyedCallBack, BuildingDamageCallBack);
 
             _percentageText.text = (battle.percentage * 100f).ToString("F2") + "%";
+            UpdateLoots();
 
+            surrender = false;
             readyToStart = true;
             isStarted = false;
+        }
+
+        private void UpdateLoots()
+        {
+            var looted = battle.GetlootedResources();
+            _lootGoldText.text = looted.Item1 + "/" + looted.Item3;
+            _lootFishText.text = looted.Item2 + "/" + looted.Item4;
         }
 
         private void StartBattle()
@@ -174,10 +224,36 @@ namespace AhmetsHub.ClashOfPirates
             Sender.TCP_Send(packet);
         }
 
-        public void StartBattleConfirm(bool confirmed)
+        public void BattleEnded(int stars, int unitsDeployed, int lootedGold, int lootedFish, int trophies, int frame)
+        {
+            var looted = battle.GetlootedResources();
+            Debug.Log("Battle Ended.");
+            Debug.Log("Frame -> Client:" + battle.frameCount + " Server:" + frame);
+            Debug.Log("Stars -> Client:" + battle.stars + " Server:" + stars);
+            Debug.Log("Units Deployed -> Client:" + battle.unitsDeployed + " Server:" + unitsDeployed);
+            Debug.Log("Looted Gold -> Client:" + looted.Item1 + " Server:" + lootedGold);
+            Debug.Log("Looted Fish -> Client:" + looted.Item2 + " Server:" + lootedFish);
+            Debug.Log("Trophies -> Client:" + battle.GetTrophies() + " Server:" + trophies);
+            _endPanel.SetActive(true);
+        }
+
+        public void StartBattleConfirm(bool confirmed, List<Data.BattleStartBuildingData> buildings, int winTrophies, int loseTrophies)
         {
             if (confirmed)
             {
+                battle.winTrophies = winTrophies;
+                battle.loseTrophies = loseTrophies;
+                for (int i = 0; i < battle._buildings.Count; i++)
+                {
+                    for (int j = 0; j < buildings.Count; j++)
+                    {
+                        if (battle._buildings[i].building.databaseID == buildings[j].databaseID)
+                        {
+                            battle._buildings[i].lootGoldStorage = buildings[j].lootGoldStorage;
+                            battle._buildings[i].lootFishStorage = buildings[j].lootFishStorage;
+                        }
+                    }
+                }
                 isStarted = true;
             }
             else
@@ -185,6 +261,21 @@ namespace AhmetsHub.ClashOfPirates
                 Debug.Log("Battle is not confirmed by the server.");
             }
         }
+
+        private void Surrender()
+        {
+            surrender = true;
+        }
+
+        public void EndBattle(bool surrender, int surrenderFrame)
+        {
+            Packet packet = new Packet();
+            packet.Write((int)Player.RequestsID.BATTLEEND);
+            packet.Write(surrender);
+            packet.Write(surrenderFrame);
+            Sender.TCP_Send(packet);
+        }
+
 
         [SerializeField] private GameObject _elements = null;
         [SerializeField] private RectTransform unitsGrid = null;
@@ -273,13 +364,13 @@ namespace AhmetsHub.ClashOfPirates
 
         private void Update()
         {
-            if(battle != null)
+            if (battle != null && battle.end == false)
             {
                 if (isStarted)
                 {
                     TimeSpan span = DateTime.Now - baseTime;
 
-                    if(_timerText != null)
+                    if (_timerText != null)
                     {
                         _timerText.text = TimeSpan.FromSeconds(Data.battleDuration - span.TotalSeconds).ToString(@"mm\:ss");
                     }
@@ -315,18 +406,40 @@ namespace AhmetsHub.ClashOfPirates
                             Sender.TCP_Send(packet);
                         }
                         battle.ExecuteFrame();
-                    }
-
-                    if (span.TotalSeconds >= Data.battleDuration)
-                    {
-                        // Battle time is over
-                        isStarted = false;
+                        if ((float)battle.frameCount * Data.battleFrameRate >= battle.duration || Math.Abs(battle.percentage - 1d) <= 0.0001d)
+                        {
+                            battle.end = true;
+                            isStarted = false;
+                            EndBattle(false, battle.frameCount);
+                        }
+                        else if (surrender || (!battle.IsAliveUnitsOnGrid() && !HaveUnitLeftToPlace()))
+                        {
+                            Debug.Log("Surrender called");
+                            battle.end = true;
+                            battle.surrender = true;
+                            isStarted = false;
+                            EndBattle(true, battle.frameCount);
+                        }
                     }
                 }
-                
                 UpdateUnits();
                 UpdateBuildings();
             }
+        }
+
+        private bool HaveUnitLeftToPlace()
+        {
+            if (units.Count > 0)
+            {
+                for (int i = 0; i < units.Count; i++)
+                {
+                    if (units[i].count > 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private BattleUnit GetUnitPrefab(Data.UnitID id)
@@ -461,12 +574,11 @@ namespace AhmetsHub.ClashOfPirates
                     break;
                 }
             }
-            Debug.Log("Unit killed.");
         }
 
         public void UnitDamageCallBack(long id, float damage)
         {
-            Debug.Log("Unit took damage: " + damage);
+            
         }
 
         public void UnitHealCallBack(long id, float health)
@@ -481,10 +593,10 @@ namespace AhmetsHub.ClashOfPirates
 
         public void BuildingDamageCallBack(long id, float damage)
         {
-            Debug.Log("Building took damage: " + damage);
+            
         }
 
-        public void BuildingDestroyedCallBack(long id, float percentage)
+        public void BuildingDestroyedCallBack(long id, double percentage)
         {
             if(percentage > 0)
             {
@@ -500,7 +612,6 @@ namespace AhmetsHub.ClashOfPirates
                     break;
                 }
             }
-            Debug.Log("Building destroyed.");
         }
         #endregion
 

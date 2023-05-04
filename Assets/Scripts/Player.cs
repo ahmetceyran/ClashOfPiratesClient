@@ -15,7 +15,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14
         }
 
         private void Start()
@@ -143,13 +143,12 @@ namespace AhmetsHub.ClashOfPirates
                 case RequestsID.COLLECT:
                     long db = packet.ReadLong();
                     int collected = packet.ReadInt();
-                    Debug.Log("Collected " + collected);
                     for(int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
                     {
                         if(db == UI_Main.instanse._grid.buildings[i].data.databaseID)
                         {
                             UI_Main.instanse._grid.buildings[i].collecting = false;
-                            UI_Main.instanse._grid.buildings[i].data.storage -= collected;
+                            //UI_Main.instanse._grid.buildings[i].data.storage -= collected;
                             UI_Main.instanse._grid.buildings[i].AdjustUI();
                             break;
                         }
@@ -246,7 +245,27 @@ namespace AhmetsHub.ClashOfPirates
                 case RequestsID.BATTLESTART:
                     bool matched = packet.ReadBool();
                     bool attack = packet.ReadBool();
-                    UI_Battle.instanse.StartBattleConfirm(matched && attack);
+                    bool confirmed = matched && attack;
+                    List<Data.BattleStartBuildingData> buildings = null;
+                    int wt = 0;
+                    int lt = 0;
+                    if(confirmed)
+                    {
+                        wt = packet.ReadInt();
+                        lt = packet.ReadInt();
+                        string bsbd = packet.ReadString();
+                        buildings = Data.Desrialize<List<Data.BattleStartBuildingData>>(bsbd);
+                    }
+                    UI_Battle.instanse.StartBattleConfirm(confirmed, buildings, wt, lt);
+                    break;
+                case RequestsID.BATTLEEND:
+                    int stars = packet.ReadInt();
+                    int unitsDeployed = packet.ReadInt();
+                    int lootedGold = packet.ReadInt();
+                    int lootedFish = packet.ReadInt();
+                    int trophies = packet.ReadInt();
+                    int frame = packet.ReadInt();
+                    UI_Battle.instanse.BattleEnded(stars, unitsDeployed, lootedGold, lootedFish, trophies, frame);
                     break;
             }
         }
@@ -309,6 +328,10 @@ namespace AhmetsHub.ClashOfPirates
                     switch(building.id)
                     {
                         case Data.BuildingID.islandhall:
+                            maxFish += building.data.fishCapacity;
+                            fish += building.data.fishStorage;
+                            maxGold += building.data.goldCapacity;
+                            gold += building.data.goldStorage;
                             break;
                         case Data.BuildingID.fisher:
                             if(building.collectButton == null)
@@ -319,8 +342,8 @@ namespace AhmetsHub.ClashOfPirates
                             }
                             break;
                         case Data.BuildingID.fishstorage:
-                            maxFish += building.data.capacity;
-                            fish += building.data.storage;
+                            maxFish += building.data.fishCapacity;
+                            fish += building.data.fishStorage;
                             break;
                         case Data.BuildingID.goldmine:
                             if(building.collectButton == null)
@@ -331,8 +354,8 @@ namespace AhmetsHub.ClashOfPirates
                             }
                             break;
                         case Data.BuildingID.goldstorage:
-                            maxGold += building.data.capacity;
-                            gold += building.data.storage;
+                            maxGold += building.data.goldCapacity;
+                            gold += building.data.goldStorage;
                             break;
                     }
                     building.AdjustUI();

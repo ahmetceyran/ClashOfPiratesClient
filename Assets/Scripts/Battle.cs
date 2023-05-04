@@ -36,14 +36,12 @@ namespace AhmetsHub.ClashOfPirates
         public int winTrophies = 0;
         public int loseTrophies = 0;
 
-        public (int, int, int, int, int, int) GetlootedResources()
+        public (int, int, int, int) GetlootedResources()
         {
             int totalGold = 0;
-            int totalElixir = 0;
-            int totalDark = 0;
+            int totalFish = 0;
             int lootedGold = 0;
-            int lootedElixir = 0;
-            int lootedDark = 0;
+            int lootedFish = 0;
             for (int i = 0; i < _buildings.Count; i++)
             {
                 switch (_buildings[i].building.id)
@@ -51,10 +49,8 @@ namespace AhmetsHub.ClashOfPirates
                     case Data.BuildingID.islandhall:
                         totalGold += _buildings[i].lootGoldStorage;
                         lootedGold += _buildings[i].lootedGold;
-                        totalElixir += _buildings[i].lootElixirStorage;
-                        lootedElixir += _buildings[i].lootedElixir;
-                        totalDark += _buildings[i].lootDarkStorage;
-                        lootedDark += _buildings[i].lootedDark;
+                        totalFish += _buildings[i].lootFishStorage;
+                        lootedFish += _buildings[i].lootedFish;
                         break;
                     case Data.BuildingID.goldmine:
                     case Data.BuildingID.goldstorage:
@@ -63,15 +59,15 @@ namespace AhmetsHub.ClashOfPirates
                         break;
                     case Data.BuildingID.fisher:
                     case Data.BuildingID.fishstorage:
-                        totalElixir += _buildings[i].lootElixirStorage;
-                        lootedElixir += _buildings[i].lootedElixir;
+                        totalFish += _buildings[i].lootFishStorage;
+                        lootedFish += _buildings[i].lootedFish;
                         break;
                     /*case Data.BuildingID.clancastle:
 
                         break;*/
                 }
             }
-            return (lootedGold, lootedElixir, lootedDark, totalGold, totalElixir, totalDark);
+            return (lootedGold, lootedFish, totalGold, totalFish);
         }
 
         public int stars { get { int s = 0; if (townhallDestroyed) { s++; } if (fiftyPercentDestroyed) { s++; } if (completelyDestroyed) { s++; } return s; } }
@@ -233,12 +229,10 @@ namespace AhmetsHub.ClashOfPirates
             public BlankCallback starCallback = null;
 
             public int lootGoldStorage = 0;
-            public int lootElixirStorage = 0;
-            public int lootDarkStorage = 0;
+            public int lootFishStorage = 0;
 
             public int lootedGold = 0;
-            public int lootedElixir = 0;
-            public int lootedDark = 0;
+            public int lootedFish = 0;
 
             public void TakeDamage(float damage, ref Grid grid, ref List<Tile> blockedTiles, ref double percentage, ref bool fiftySatar, ref bool hallStar, ref bool allStar)
             {
@@ -252,8 +246,7 @@ namespace AhmetsHub.ClashOfPirates
 
                 double loot = 1d - ((double)health / (double)building.health);
                 if (lootGoldStorage > 0) { lootedGold = (int)Math.Floor(lootGoldStorage * loot); }
-                if (lootElixirStorage > 0) { lootedElixir = (int)Math.Floor(lootElixirStorage * loot); }
-                if (lootDarkStorage > 0) { lootedDark = (int)Math.Floor(lootDarkStorage * loot); }
+                if (lootFishStorage > 0) { lootedFish = (int)Math.Floor(lootFishStorage * loot); }
 
                 if (health <= 0)
                 {
@@ -312,8 +305,7 @@ namespace AhmetsHub.ClashOfPirates
                 health = building.health;
                 percentage = building.percentage;
                 lootedGold = 0;
-                lootedElixir = 0;
-                lootedDark = 0;
+                lootedFish = 0;
             }
         }
 

@@ -8,13 +8,14 @@ namespace AhmetsHub.ClashOfPirates
     public class Building : MonoBehaviour
     {
 
-        public Data.BuildingID id = Data.BuildingID.islandhall;
+        public Data.BuildingID id = Data.BuildingID.townhall;
         private static Building _buildInstance = null; public static Building buildInstanse { get { return _buildInstance; } set { _buildInstance = value; } }
         private static Building _selectedInstance = null; public static Building selectedInstanse { get { return _selectedInstance; } set { _selectedInstance = value; } }
 
         [HideInInspector] public Data.Building data = new Data.Building();
         [HideInInspector] public UI_Button collectButton = null;
         [HideInInspector] public bool collecting = false;
+
         [HideInInspector] public UI_Bar buildBar = null;
 
         [System.Serializable] public class Level
@@ -43,11 +44,11 @@ namespace AhmetsHub.ClashOfPirates
 
         private void OnDestroy()
         {
-            if(buildBar)
+            if (buildBar)
             {
                 Destroy(buildBar.gameObject);
             }
-            if(collectButton)
+            if (collectButton)
             {
                 Destroy(collectButton.gameObject);
             }
@@ -60,14 +61,14 @@ namespace AhmetsHub.ClashOfPirates
 
         public void AdjustUI()
         {
-            if(collectButton)
+            if (collectButton)
             {
-                switch(id)
+                switch (id)
                 {
-                    case Data.BuildingID.islandhall:
+                    case Data.BuildingID.townhall:
                         break;
                     case Data.BuildingID.goldmine:
-                        if(data.goldStorage >= Data.minGoldCollect)
+                        if (data.goldStorage >= Data.minGoldCollect)
                         {
                             collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
                         }
@@ -76,8 +77,8 @@ namespace AhmetsHub.ClashOfPirates
                             collectButton.gameObject.SetActive(false);
                         }
                         break;
-                    case Data.BuildingID.fisher:
-                        if(data.fishStorage >= Data.minFishCollect)
+                    case Data.BuildingID.elixirmine:
+                        if (data.elixirStorage >= Data.minElixirCollect)
                         {
                             collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
                         }
@@ -86,7 +87,15 @@ namespace AhmetsHub.ClashOfPirates
                             collectButton.gameObject.SetActive(false);
                         }
                         break;
-                    case Data.BuildingID.fishstorage:
+                    case Data.BuildingID.darkelixirmine:
+                        if (data.darkStorage >= Data.minDarkElixirCollect)
+                        {
+                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
+                        }
+                        else
+                        {
+                            collectButton.gameObject.SetActive(false);
+                        }
                         break;
                     case Data.BuildingID.goldstorage:
                         break;
@@ -102,12 +111,14 @@ namespace AhmetsHub.ClashOfPirates
                 float endW = end.x - planDownLeft.x;
                 float endH = end.z - planDownLeft.z;
 
-                Vector2 screenPoint = new Vector2(endW / w * Screen.width, endH / h * Screen.height + 50f);
+                Vector2 screenPoint = new Vector2(endW / w * Screen.width, endH / h * Screen.height);
                 collectButton.rect.anchoredPosition = screenPoint;
+
             }
-            if(buildBar != null)
+        
+            if (buildBar)
             {
-                if(data.isConstructing)
+                if (data.isConstructing)
                 {
                     System.TimeSpan span = data.constructionTime - Player.instanse.data.nowTime;
 
@@ -134,7 +145,7 @@ namespace AhmetsHub.ClashOfPirates
                     float endW = end.x - planDownLeft.x;
                     float endH = end.z - planDownLeft.z;
 
-                    Vector2 screenPoint = new Vector2(endW / w * Screen.width, endH / h * Screen.height + 50f);
+                    Vector2 screenPoint = new Vector2(endW / w * Screen.width, endH / h * Screen.height);
                     buildBar.rect.anchoredPosition = screenPoint;
 
                 }
@@ -233,7 +244,7 @@ namespace AhmetsHub.ClashOfPirates
                 }
             }
 
-            if(waitingReplaceResponse)
+            if (waitingReplaceResponse)
             {
                 return;
             }
@@ -247,7 +258,7 @@ namespace AhmetsHub.ClashOfPirates
         public void Deselected()
         {
             UI_BuildingOptions.instanse.SetStatus(false);
-            CameraController.instanse.isPlacingBuilding = false;
+            CameraController.instanse.isReplacingBuilding = false;
             if(_originalX != currentX || _originalY != currentY)
             {
                 SaveLocation();
@@ -257,7 +268,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void SaveLocation(bool resetIfNot = true)
         {
-            if(UI_Main.instanse._grid.CanPlaceBuilding(this, currentX, currentY) && (_X != currentX || _Y != currentY) && !waitingReplaceResponse)
+            if (UI_Main.instanse._grid.CanPlaceBuilding(this, _currentX, _currentY) && (_X != currentX || _Y != currentY) && !waitingReplaceResponse)
             {
                 waitingReplaceResponse = true;
                 Packet packet = new Packet();
@@ -270,9 +281,9 @@ namespace AhmetsHub.ClashOfPirates
             }
             else
             {
-                if(resetIfNot)
+                if (resetIfNot)
                 {
-                    if(waitingReplaceResponse == false)
+                    if (waitingReplaceResponse == false)
                     {
                         PlacedOnGrid(_originalX, _originalY);
                     }

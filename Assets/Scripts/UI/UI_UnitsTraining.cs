@@ -3,8 +3,8 @@ namespace AhmetsHub.ClashOfPirates
     using System.Collections;
     using System.Collections.Generic;
     using UnityEngine;
-    using UnityEngine.UI;
     using TMPro;
+    using UnityEngine.UI;
     using DevelopersHub.RealtimeNetworking.Client;
 
     public class UI_UnitsTraining : MonoBehaviour
@@ -15,7 +15,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _buttonRemove = null;
 
         private Data.Unit _unit = null; public long databaseID { get { return _unit != null ? _unit.databaseID : 0; } }
-        [HideInInspector] public Data.UnitID id = Data.UnitID.pirate;
+        [HideInInspector] public Data.UnitID id = Data.UnitID.barbarian;
 
         [HideInInspector] public int index = -1;
 
@@ -55,6 +55,6 @@ namespace AhmetsHub.ClashOfPirates
                 }
             }
         }
-        
+
     }
 }

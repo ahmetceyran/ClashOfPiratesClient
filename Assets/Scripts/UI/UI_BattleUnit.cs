@@ -13,7 +13,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private TextMeshProUGUI _haveText = null;
         [SerializeField] private Button _buttonSelect = null;
 
-        [HideInInspector] public Data.UnitID id = Data.UnitID.pirate;
+        [HideInInspector] public Data.UnitID id = Data.UnitID.barbarian;
         public int count { get { return units.Count; } }
         private List<long> units = new List<long>();
 

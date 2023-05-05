@@ -7,6 +7,7 @@ namespace AhmetsHub.ClashOfPirates
 
     public class UI_Button : MonoBehaviour
     {
+
         public Button button = null;
         public RectTransform rect = null;
 
@@ -20,5 +21,6 @@ namespace AhmetsHub.ClashOfPirates
         {
             button.onClick.RemoveAllListeners();
         }
+
     }
 }

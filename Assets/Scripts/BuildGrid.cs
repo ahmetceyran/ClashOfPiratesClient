@@ -29,7 +29,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             for (int i = 0; i < buildings.Count; i++)
             {
-                if(buildings[i])
+                if (buildings[i])
                 {
                     Destroy(buildings[i].gameObject);
                 }

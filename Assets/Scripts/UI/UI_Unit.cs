@@ -9,12 +9,11 @@ namespace AhmetsHub.ClashOfPirates
 
     public class UI_Unit : MonoBehaviour
     {
-
-        [SerializeField] private Data.UnitID _id = Data.UnitID.pirate; public Data.UnitID id { get { return _id; } }
+        [SerializeField] private Data.UnitID _id = Data.UnitID.barbarian; public Data.UnitID id { get { return _id; } }
         [SerializeField] private Button _button = null;
         [SerializeField] private TextMeshProUGUI _haveUnitsText = null;
         [SerializeField] private TextMeshProUGUI _reqResourceText = null;
-        private int count = 0; public int haveCount { get { return count; } set { count = value; _haveUnitsText.text = count.ToString(); } } 
+        private int count = 0; public int haveCount { get { return count; } set { count = value; _haveUnitsText.text = count.ToString(); } }
 
         private void Start()
         {
@@ -28,13 +27,17 @@ namespace AhmetsHub.ClashOfPirates
             {
                 _reqResourceText.text = "Gold: " + unit.requiredGold.ToString();
             }
-            else if (unit.requiredFish > 0)
+            else if (unit.requiredElixir > 0)
             {
-                _reqResourceText.text = "Fish: " + unit.requiredFish.ToString();
+                _reqResourceText.text = "Elixir: " + unit.requiredElixir.ToString();
             }
-            else if (unit.requiredDiamonds > 0)
+            else if (unit.requiredGems > 0)
             {
-                _reqResourceText.text = "Diamonds: " + unit.requiredDiamonds.ToString();
+                _reqResourceText.text = "Gems: " + unit.requiredGems.ToString();
+            }
+            else if (unit.requiredDarkElixir > 0)
+            {
+                _reqResourceText.text = "Dark: " + unit.requiredDarkElixir.ToString();
             }
             else
             {

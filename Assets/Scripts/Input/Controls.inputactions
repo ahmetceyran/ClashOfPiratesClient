@@ -80,7 +80,7 @@
                 {
                     "name": "PointerClick",
                     "type": "Button",
-                    "id": "4964308a-72c6-4a61-a5ec-c82ce6728bc6",
+                    "id": "8886b2ad-4752-4f08-ba57-78ac18a558c7",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "Tap",
@@ -233,7 +233,7 @@
                 },
                 {
                     "name": "",
-                    "id": "af6b4cc2-f2fd-4778-8491-6ee92710e5cb",
+                    "id": "1ce0e73d-9282-402c-a587-1c4deaf17d75",
                     "path": "<Mouse>/leftButton",
                     "interactions": "",
                     "processors": "",
@@ -244,7 +244,7 @@
                 },
                 {
                     "name": "",
-                    "id": "5c22fa6b-386a-4854-b8fd-4ca702ca1275",
+                    "id": "311ee14a-7997-4da9-b022-a610cb16fe5d",
                     "path": "<Touchscreen>/primaryTouch/tap",
                     "interactions": "",
                     "processors": "",

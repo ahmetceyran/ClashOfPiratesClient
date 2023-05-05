@@ -5,6 +5,7 @@ namespace AhmetsHub.ClashOfPirates
     using UnityEngine;
     using UnityEngine.EventSystems;
     using DevelopersHub.RealtimeNetworking.Client;
+    using DevelopersHub.ClashOfWhatecer;
 
     public class CameraController : MonoBehaviour
     {
@@ -64,7 +65,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void Start()
         {
-            Initialize(Vector3.zero, 60, 60, 60, 60, 45, 10, 5, 40);
+            Initialize(Vector3.zero, 40, 40, 40, 40, 45, 10, 5, 20);
         }
 
         public void Initialize(Vector3 center, float right, float left, float up, float down, float angle, float zoom, float zoomMin, float zoomMax)
@@ -124,13 +125,13 @@ namespace AhmetsHub.ClashOfPirates
             List<RaycastResult> results = new List<RaycastResult>();
             EventSystem.current.RaycastAll(data, results);
 
-            if(UI_Main.instanse.isActive)
+            if (UI_Main.instanse.isActive)
             {
-                if(results.Count <= 0)
+                if (results.Count <= 0)
                 {
                     bool found = false;
                     Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
-                    for(int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
+                    for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
                     {
                         if (UI_Main.instanse._grid.IsWorldPositionIsOnPlane(planePosition, UI_Main.instanse._grid.buildings[i].currentX, UI_Main.instanse._grid.buildings[i].currentY, UI_Main.instanse._grid.buildings[i].rows, UI_Main.instanse._grid.buildings[i].columns))
                         {
@@ -139,9 +140,9 @@ namespace AhmetsHub.ClashOfPirates
                             break;
                         }
                     }
-                    if(!found)
+                    if (!found)
                     {
-                        if(Building.selectedInstanse != null)
+                        if (Building.selectedInstanse != null)
                         {
                             Building.selectedInstanse.Deselected();
                         }
@@ -149,17 +150,17 @@ namespace AhmetsHub.ClashOfPirates
                 }
                 else
                 {
-                    if(Building.selectedInstanse != null)
+                    if (Building.selectedInstanse != null)
                     {
                         //bool handled = false;
-                        for(int i = 0; i < results.Count; i++)
+                        for (int i = 0; i < results.Count; i++)
                         {
-                            if(results[i].gameObject == UI_BuildingOptions.instanse.infoButton.gameObject)
+                            if (results[i].gameObject == UI_BuildingOptions.instanse.infoButton.gameObject)
                             {
                                 //handled = true;
                                 // todo: show info
                             }
-                            else if(results[i].gameObject == UI_BuildingOptions.instanse.uupgradeButton.gameObject)
+                            else if (results[i].gameObject == UI_BuildingOptions.instanse.upgradeButton.gameObject)
                             {
                                 //handled = true;
                                 Packet packet = new Packet();
@@ -167,7 +168,7 @@ namespace AhmetsHub.ClashOfPirates
                                 packet.Write(Building.selectedInstanse.data.databaseID);
                                 Sender.TCP_Send(packet);
                             }
-                            else if(results[i].gameObject == UI_BuildingOptions.instanse.instantButton.gameObject)
+                            else if (results[i].gameObject == UI_BuildingOptions.instanse.instantButton.gameObject)
                             {
                                 //handled = true;
                                 Packet packet = new Packet();
@@ -175,27 +176,27 @@ namespace AhmetsHub.ClashOfPirates
                                 packet.Write(Building.selectedInstanse.data.databaseID);
                                 Sender.TCP_Send(packet);
                             }
-                            else if(results[i].gameObject == UI_BuildingOptions.instanse.trainButton.gameObject)
+                            else if (results[i].gameObject == UI_BuildingOptions.instanse.trainButton.gameObject)
                             {
                                 //handled = true;
                                 UI_Train.instanse.SetStatus(true);
                             }
                         }
-                        /*if(handled)
-                        {
-                            return;
-                        }*/
+                        //if (handled)
+                        //{
+                        //return;
+                        //}
                         Building.selectedInstanse.Deselected();
                     }
                 }
             }
-            else if(UI_Battle.instanse.isActive)
+            else if (UI_Battle.instanse.isActive)
             {
-                if(results.Count <= 0 && UI_Battle.instanse.selectedUnit >= 0)
+                if (results.Count <= 0 && UI_Battle.instanse.selectedUnit >= 0)
                 {
                     Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
                     planePosition = UI_Main.instanse._grid.transform.InverseTransformPoint(planePosition);
-                    if(planePosition.x >= 0 && planePosition.x < Data.gridSize && planePosition.z >= 0 && planePosition.z < Data.gridSize)
+                    if (planePosition.x >= 0 && planePosition.x < Data.gridSize && planePosition.z >= 0 && planePosition.z < Data.gridSize)
                     {
                         UI_Battle.instanse.PlaceUnit((int)planePosition.x, (int)planePosition.z);
                     }
@@ -203,7 +204,7 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
-        private bool IsScreenPointOverUI(Vector2 position)
+        public bool IsScreenPointOverUI(Vector2 position)
         {
             PointerEventData data = new PointerEventData(EventSystem.current);
             data.position = position;
@@ -231,7 +232,7 @@ namespace AhmetsHub.ClashOfPirates
                     _replaceBasePosition = CameraScreenPositionToPlanePosition(_inputs.Main.PointerPosition.ReadValue<Vector2>());
                     if (UI_Main.instanse._grid.IsWorldPositionIsOnPlane(_replaceBasePosition, Building.selectedInstanse.currentX, Building.selectedInstanse.currentY, Building.selectedInstanse.rows, Building.selectedInstanse.columns))
                     {
-                        if(!_replacing)
+                        if (!_replacing)
                         {
                             _replacing = true;
                         }
@@ -251,10 +252,10 @@ namespace AhmetsHub.ClashOfPirates
         {
             _moving = false;
             _movingBuilding = false;
-            if(_replacingBuilding)
+            if (_replacingBuilding)
             {
                 _replacingBuilding = false;
-                if(Building.selectedInstanse)
+                if (Building.selectedInstanse)
                 {
                     Building.selectedInstanse.SaveLocation(false);
                 }
@@ -285,10 +286,9 @@ namespace AhmetsHub.ClashOfPirates
         {
             _zooming = false;
         }
-
+        
         private void Update()
         {
-
             if (Input.touchSupported == false)
             {
                 float mouseScroll = _inputs.Main.MouseScroll.ReadValue<float>();
@@ -360,7 +360,7 @@ namespace AhmetsHub.ClashOfPirates
             }
 
             planDownLeft = CameraScreenPositionToPlanePosition(Vector2.zero);
-            planTopRight = CameraScreenPositionToPlanePosition(new Vector2(Screen.width, Screen.height));
+            planTopRight =CameraScreenPositionToPlanePosition(new Vector2(Screen.width, Screen.height));
         }
 
         private void AdjustBounds()

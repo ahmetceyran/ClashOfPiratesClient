@@ -18,7 +18,8 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] public TextMeshProUGUI _timerText = null;
         [SerializeField] public TextMeshProUGUI _percentageText = null;
         [SerializeField] public TextMeshProUGUI _lootGoldText = null;
-        [SerializeField] public TextMeshProUGUI _lootFishText = null;
+        [SerializeField] public TextMeshProUGUI _lootElixirText = null;
+        [SerializeField] public TextMeshProUGUI _lootDarkText = null;
         [SerializeField] private UI_Bar healthBarPrefab = null;
         [SerializeField] private RectTransform healthBarGrid = null;
         [SerializeField] private BattleUnit[] battleUnits = null;
@@ -96,12 +97,12 @@ namespace AhmetsHub.ClashOfPirates
             startbuildings = buildings;
             battleBuildings.Clear();
 
-            int islandhallLevel = 1;
+            int townhallLevel = 1;
             for (int i = 0; i < buildings.Count; i++)
             {
-                if (buildings[i].id == Data.BuildingID.islandhall)
+                if (buildings[i].id == Data.BuildingID.townhall)
                 {
-                    islandhallLevel = buildings[i].level;
+                    townhallLevel = buildings[i].level;
                     break;
                 }
             }
@@ -112,21 +113,28 @@ namespace AhmetsHub.ClashOfPirates
                 building.building = buildings[i];
                 switch (building.building.id)
                 {
-                    case Data.BuildingID.islandhall:
-                        building.lootGoldStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.goldStorage);
-                        building.lootFishStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.fishStorage);
+                    case Data.BuildingID.townhall:
+                        building.lootGoldStorage = Data.GetStorageGoldAndElixirLoot(townhallLevel, building.building.goldStorage);
+                        building.lootElixirStorage = Data.GetStorageGoldAndElixirLoot(townhallLevel, building.building.elixirStorage);
+                        building.lootDarkStorage = Data.GetStorageDarkElixirLoot(townhallLevel, building.building.darkStorage);
                         break;
                     case Data.BuildingID.goldmine:
-                        building.lootGoldStorage = Data.GetMinesGoldAndFishLoot(islandhallLevel, building.building.goldStorage);
+                        building.lootGoldStorage = Data.GetMinesGoldAndElixirLoot(townhallLevel, building.building.goldStorage);
                         break;
                     case Data.BuildingID.goldstorage:
-                        building.lootGoldStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.goldStorage);
+                        building.lootGoldStorage = Data.GetStorageGoldAndElixirLoot(townhallLevel, building.building.goldStorage);
                         break;
-                    case Data.BuildingID.fisher:
-                        building.lootFishStorage = Data.GetMinesGoldAndFishLoot(islandhallLevel, building.building.fishStorage);
+                    case Data.BuildingID.elixirmine:
+                        building.lootElixirStorage = Data.GetMinesGoldAndElixirLoot(townhallLevel, building.building.elixirStorage);
                         break;
-                    case Data.BuildingID.fishstorage:
-                        building.lootFishStorage = Data.GetStorageGoldAndFishLoot(islandhallLevel, building.building.fishStorage);
+                    case Data.BuildingID.elixirstorage:
+                        building.lootElixirStorage = Data.GetStorageGoldAndElixirLoot(townhallLevel, building.building.elixirStorage);
+                        break;
+                    case Data.BuildingID.darkelixirmine:
+                        building.lootDarkStorage = Data.GetMinesDarkElixirLoot(townhallLevel, building.building.darkStorage);
+                        break;
+                    case Data.BuildingID.darkelixirstorage:
+                        building.lootDarkStorage = Data.GetStorageDarkElixirLoot(townhallLevel, building.building.darkStorage);
                         break;
                 }
                 battleBuildings.Add(building);
@@ -204,8 +212,9 @@ namespace AhmetsHub.ClashOfPirates
         private void UpdateLoots()
         {
             var looted = battle.GetlootedResources();
-            _lootGoldText.text = looted.Item1 + "/" + looted.Item3;
-            _lootFishText.text = looted.Item2 + "/" + looted.Item4;
+            _lootGoldText.text = looted.Item1 + "/" + looted.Item4;
+            _lootElixirText.text = looted.Item2 + "/" + looted.Item5;
+            _lootDarkText.text = looted.Item3 + "/" + looted.Item6;
         }
 
         private void StartBattle()
@@ -224,7 +233,7 @@ namespace AhmetsHub.ClashOfPirates
             Sender.TCP_Send(packet);
         }
 
-        public void BattleEnded(int stars, int unitsDeployed, int lootedGold, int lootedFish, int trophies, int frame)
+        public void BattleEnded(int stars, int unitsDeployed, int lootedGold, int lootedElixir, int lootedDark, int trophies, int frame)
         {
             var looted = battle.GetlootedResources();
             Debug.Log("Battle Ended.");
@@ -232,7 +241,8 @@ namespace AhmetsHub.ClashOfPirates
             Debug.Log("Stars -> Client:" + battle.stars + " Server:" + stars);
             Debug.Log("Units Deployed -> Client:" + battle.unitsDeployed + " Server:" + unitsDeployed);
             Debug.Log("Looted Gold -> Client:" + looted.Item1 + " Server:" + lootedGold);
-            Debug.Log("Looted Fish -> Client:" + looted.Item2 + " Server:" + lootedFish);
+            Debug.Log("Looted Elixir -> Client:" + looted.Item2 + " Server:" + lootedElixir);
+            Debug.Log("Looted Dark Elixir -> Client:" + looted.Item3 + " Server:" + lootedDark);
             Debug.Log("Trophies -> Client:" + battle.GetTrophies() + " Server:" + trophies);
             _endPanel.SetActive(true);
         }
@@ -250,7 +260,8 @@ namespace AhmetsHub.ClashOfPirates
                         if (battle._buildings[i].building.databaseID == buildings[j].databaseID)
                         {
                             battle._buildings[i].lootGoldStorage = buildings[j].lootGoldStorage;
-                            battle._buildings[i].lootFishStorage = buildings[j].lootFishStorage;
+                            battle._buildings[i].lootElixirStorage = buildings[j].lootElixirStorage;
+                            battle._buildings[i].lootDarkStorage = buildings[j].lootDarkStorage;
                         }
                     }
                 }
@@ -275,7 +286,6 @@ namespace AhmetsHub.ClashOfPirates
             packet.Write(surrenderFrame);
             Sender.TCP_Send(packet);
         }
-
 
         [SerializeField] private GameObject _elements = null;
         [SerializeField] private RectTransform unitsGrid = null;
@@ -408,6 +418,7 @@ namespace AhmetsHub.ClashOfPirates
                         battle.ExecuteFrame();
                         if ((float)battle.frameCount * Data.battleFrameRate >= battle.duration || Math.Abs(battle.percentage - 1d) <= 0.0001d)
                         {
+                            Debug.Log("End called");
                             battle.end = true;
                             isStarted = false;
                             EndBattle(false, battle.frameCount);
@@ -593,7 +604,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void BuildingDamageCallBack(long id, float damage)
         {
-            
+            UpdateLoots();
         }
 
         public void BuildingDestroyedCallBack(long id, double percentage)

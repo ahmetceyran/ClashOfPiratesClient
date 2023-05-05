@@ -9,7 +9,7 @@ namespace AhmetsHub.ClashOfPirates
     public class UI_Building : MonoBehaviour
     {
 
-        [SerializeField] private Data.BuildingID _id = Data.BuildingID.islandhall;
+        [SerializeField] private Data.BuildingID _id = Data.BuildingID.townhall;
         [SerializeField] private Button _button = null;
 
         private void Start()

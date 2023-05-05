@@ -7,7 +7,7 @@ namespace AhmetsHub.ClashOfPirates
     public class BattleUnit : MonoBehaviour
     {
 
-        public Data.UnitID id = Data.UnitID.pirate;
+        public Data.UnitID id = Data.UnitID.barbarian;
         private Vector3 lastPosition = Vector3.zero;
         private int i = -1; public int index { get { return i; } }
         private long _id = 0; public long databaseID { get { return _id; } }

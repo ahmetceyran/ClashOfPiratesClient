@@ -51,11 +51,11 @@ namespace AhmetsHub.ClashOfPirates
                 Vector2 screenPoint = new Vector2(endW / w * Screen.width, endH / h * Screen.height);
 
                 Vector2 confirmPoint = screenPoint;
-                confirmPoint.x += (buttonConfirm.rect.width + 45f);
+                confirmPoint.x += (buttonConfirm.rect.width + 10f);
                 buttonConfirm.anchoredPosition = confirmPoint;
 
                 Vector2 cancelPoint = screenPoint;
-                cancelPoint.x -= (buttonCancel.rect.width + 45f);
+                cancelPoint.x -= (buttonCancel.rect.width + 10f);
                 buttonCancel.anchoredPosition = cancelPoint;
             }
         }

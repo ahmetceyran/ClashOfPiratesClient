@@ -8,6 +8,7 @@ namespace AhmetsHub.ClashOfPirates
 
     public class UI_Bar : MonoBehaviour
     {
+
         public Image bar = null;
         public RectTransform rect = null;
         public TextMeshProUGUI[] texts = null;
@@ -17,6 +18,6 @@ namespace AhmetsHub.ClashOfPirates
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.zero;
         }
-        
+
     }
 }

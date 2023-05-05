@@ -9,20 +9,21 @@ namespace AhmetsHub.ClashOfPirates
 
     public class UI_BuildingUpgrade : MonoBehaviour
     {
-        [SerializeField] public GameObject _elements = null;
 
+        [SerializeField] public GameObject _elements = null;
         private static UI_BuildingUpgrade _instance = null; public static UI_BuildingUpgrade instanse { get { return _instance; } }
 
         [SerializeField] private Button _closeButton = null;
         [SerializeField] private TextMeshProUGUI reqGold = null;
-        [SerializeField] private TextMeshProUGUI reqFish = null;
-        [SerializeField] private TextMeshProUGUI reqDiamonds = null;
+        [SerializeField] private TextMeshProUGUI reqElixir = null;
+        [SerializeField] private TextMeshProUGUI reqDark = null;
+        [SerializeField] private TextMeshProUGUI reqGems = null;
         [SerializeField] private TextMeshProUGUI reqTime = null;
         [SerializeField] private Button _upgradeButton = null;
 
         private void Awake()
         {
-             _instance = this;
+            _instance = this;
             _elements.SetActive(false);
         }
 
@@ -37,15 +38,16 @@ namespace AhmetsHub.ClashOfPirates
         public void Open(Data.ServerBuilding building, long databaseID)
         {
             id = databaseID;
-            if(string.IsNullOrEmpty(building.id))
+            if (string.IsNullOrEmpty(building.id))
             {
 
             }
             else
             {
                 reqGold.text = building.requiredGold.ToString();
-                reqFish.text = building.requiredFish.ToString();
-                reqDiamonds.text = building.requiredDiamonds.ToString();
+                reqElixir.text = building.requiredElixir.ToString();
+                reqDark.text = building.requiredDarkElixir.ToString();
+                reqGems.text = building.requiredGems.ToString();
                 reqTime.text = building.buildTime.ToString();
             }
             _elements.SetActive(true);

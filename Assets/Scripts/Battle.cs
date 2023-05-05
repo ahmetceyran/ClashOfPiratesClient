@@ -36,38 +36,47 @@ namespace AhmetsHub.ClashOfPirates
         public int winTrophies = 0;
         public int loseTrophies = 0;
 
-        public (int, int, int, int) GetlootedResources()
+        public (int, int, int, int, int, int) GetlootedResources()
         {
             int totalGold = 0;
-            int totalFish = 0;
+            int totalElixir = 0;
+            int totalDark = 0;
             int lootedGold = 0;
-            int lootedFish = 0;
+            int lootedElixir = 0;
+            int lootedDark = 0;
             for (int i = 0; i < _buildings.Count; i++)
             {
                 switch (_buildings[i].building.id)
                 {
-                    case Data.BuildingID.islandhall:
+                    case Data.BuildingID.townhall:
                         totalGold += _buildings[i].lootGoldStorage;
                         lootedGold += _buildings[i].lootedGold;
-                        totalFish += _buildings[i].lootFishStorage;
-                        lootedFish += _buildings[i].lootedFish;
+                        totalElixir += _buildings[i].lootElixirStorage;
+                        lootedElixir += _buildings[i].lootedElixir;
+                        totalDark += _buildings[i].lootDarkStorage;
+                        lootedDark += _buildings[i].lootedDark;
                         break;
                     case Data.BuildingID.goldmine:
                     case Data.BuildingID.goldstorage:
                         totalGold += _buildings[i].lootGoldStorage;
                         lootedGold += _buildings[i].lootedGold;
                         break;
-                    case Data.BuildingID.fisher:
-                    case Data.BuildingID.fishstorage:
-                        totalFish += _buildings[i].lootFishStorage;
-                        lootedFish += _buildings[i].lootedFish;
+                    case Data.BuildingID.elixirmine:
+                    case Data.BuildingID.elixirstorage:
+                        totalElixir += _buildings[i].lootElixirStorage;
+                        lootedElixir += _buildings[i].lootedElixir;
                         break;
-                    /*case Data.BuildingID.clancastle:
+                    case Data.BuildingID.darkelixirmine:
+                    case Data.BuildingID.darkelixirstorage:
+                        totalDark += _buildings[i].lootDarkStorage;
+                        lootedDark += _buildings[i].lootedDark;
+                        break;
+                    case Data.BuildingID.clancastle:
 
-                        break;*/
+                        break;
                 }
             }
-            return (lootedGold, lootedFish, totalGold, totalFish);
+            return (lootedGold, lootedElixir, lootedDark, totalGold, totalElixir, totalDark);
         }
 
         public int stars { get { int s = 0; if (townhallDestroyed) { s++; } if (fiftyPercentDestroyed) { s++; } if (completelyDestroyed) { s++; } return s; } }
@@ -82,9 +91,9 @@ namespace AhmetsHub.ClashOfPirates
         public int GetTrophies()
         {
             int s = stars;
-            if(s > 0)
+            if (s > 0)
             {
-                if(s >= 3)
+                if (s >= 3)
                 {
                     return winTrophies;
                 }
@@ -185,13 +194,13 @@ namespace AhmetsHub.ClashOfPirates
             {
                 if (health <= 0) { return; }
                 health -= damage;
-                if(damageCallback != null)
+                if (damageCallback != null)
                 {
                     damageCallback.Invoke(unit.databaseID, damage);
                 }
                 if (health < 0) { health = 0; }
                 if (health <= 0)
-                {                    
+                {
                     if (dieCallback != null)
                     {
                         dieCallback.Invoke(unit.databaseID);
@@ -229,10 +238,12 @@ namespace AhmetsHub.ClashOfPirates
             public BlankCallback starCallback = null;
 
             public int lootGoldStorage = 0;
-            public int lootFishStorage = 0;
+            public int lootElixirStorage = 0;
+            public int lootDarkStorage = 0;
 
             public int lootedGold = 0;
-            public int lootedFish = 0;
+            public int lootedElixir = 0;
+            public int lootedDark = 0;
 
             public void TakeDamage(float damage, ref Grid grid, ref List<Tile> blockedTiles, ref double percentage, ref bool fiftySatar, ref bool hallStar, ref bool allStar)
             {
@@ -246,7 +257,8 @@ namespace AhmetsHub.ClashOfPirates
 
                 double loot = 1d - ((double)health / (double)building.health);
                 if (lootGoldStorage > 0) { lootedGold = (int)Math.Floor(lootGoldStorage * loot); }
-                if (lootFishStorage > 0) { lootedFish = (int)Math.Floor(lootFishStorage * loot); }
+                if (lootElixirStorage > 0) { lootedElixir = (int)Math.Floor(lootElixirStorage * loot); }
+                if (lootDarkStorage > 0) { lootedDark = (int)Math.Floor(lootDarkStorage * loot); }
 
                 if (health <= 0)
                 {
@@ -265,7 +277,7 @@ namespace AhmetsHub.ClashOfPirates
                             }
                         }
                     }
-                    if(this.percentage > 0)
+                    if (this.percentage > 0)
                     {
                         percentage += this.percentage;
                     }
@@ -273,16 +285,16 @@ namespace AhmetsHub.ClashOfPirates
                     {
                         destroyCallback.Invoke(building.databaseID, this.percentage);
                     }
-                    if(building.id == Data.BuildingID.islandhall && !hallStar)
+                    if (building.id == Data.BuildingID.townhall && !hallStar)
                     {
                         hallStar = true;
-                        if(starCallback != null)
+                        if (starCallback != null)
                         {
                             starCallback.Invoke();
                         }
                     }
                     int p = (int)Math.Floor(percentage);
-                    if(p >= 50 && !fiftySatar)
+                    if (p >= 50 && !fiftySatar)
                     {
                         fiftySatar = true;
                         if (starCallback != null)
@@ -305,7 +317,8 @@ namespace AhmetsHub.ClashOfPirates
                 health = building.health;
                 percentage = building.percentage;
                 lootedGold = 0;
-                lootedFish = 0;
+                lootedElixir = 0;
+                lootedDark = 0;
             }
         }
 
@@ -355,13 +368,13 @@ namespace AhmetsHub.ClashOfPirates
                 int startY = _buildings[i].building.y;
                 int endY = _buildings[i].building.y + _buildings[i].building.rows;
 
-                if(_buildings[i].building.id != Data.BuildingID.wall && _buildings[i].building.columns > 1 && _buildings[i].building.rows > 1)
+                if (_buildings[i].building.id != Data.BuildingID.wall && _buildings[i].building.columns > 1 && _buildings[i].building.rows > 1)
                 {
                     startX++;
                     startY++;
                     endX--;
                     endY--;
-                    if(endX <= startX || endY <= startY)
+                    if (endX <= startX || endY <= startY)
                     {
                         continue;
                     }
@@ -382,7 +395,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             for (int i = 0; i < _units.Count; i++)
             {
-                if(_units[i].health > 0)
+                if (_units[i].health > 0)
                 {
                     return true;
                 }
@@ -407,7 +420,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             for (int i = 0; i < _buildings.Count; i++)
             {
-                if(_buildings[i].health <= 0)
+                if (_buildings[i].health <= 0)
                 {
                     continue;
                 }
@@ -422,7 +435,7 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     for (int y2 = startY; y2 < endY; y2++)
                     {
-                        if(x == x2 && y == y2)
+                        if (x == x2 && y == y2)
                         {
                             return false;
                         }
@@ -552,12 +565,12 @@ namespace AhmetsHub.ClashOfPirates
                     // If the building's target is dead or not in range then remove it as target
                     _buildings[index].target = -1;
                 }
-                else 
-                { 
+                else
+                {
                     // Building has a target
                     _buildings[index].attackTimer += deltaTime;
                     int attacksCount = (int)Math.Floor(_buildings[index].attackTimer / _buildings[index].building.speed);
-                    if(attacksCount > 0)
+                    if (attacksCount > 0)
                     {
                         _buildings[index].attackTimer -= (attacksCount * _buildings[index].building.speed);
                         for (int i = 1; i <= attacksCount; i++)
@@ -643,7 +656,7 @@ namespace AhmetsHub.ClashOfPirates
             float distance = BattleVector2.Distance(_buildings[buildingIndex].worldCenterPosition, _units[unitIndex].position);
             if (distance <= _buildings[buildingIndex].building.radius)
             {
-                if(_buildings[buildingIndex].building.blindRange > 0 && distance <= _buildings[buildingIndex].building.blindRange)
+                if (_buildings[buildingIndex].building.blindRange > 0 && distance <= _buildings[buildingIndex].building.blindRange)
                 {
                     return false;
                 }
@@ -654,7 +667,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void HandleUnit(int index, double deltaTime)
         {
-            if(_units[index].unit.id == Data.UnitID.healer)
+            if (_units[index].unit.id == Data.UnitID.healer)
             {
                 if (_units[index].target >= 0 && _units[_units[index].target].health <= 0 || _units[_units[index].target].health >= _units[_units[index].target].unit.health)
                 {
@@ -756,7 +769,7 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     if (_buildings[_units[index].target].health > 0)
                     {
-                        if(_buildings[_units[index].target].building.id == Data.BuildingID.wall && _units[index].mainTarget >= 0 && _buildings[_units[index].mainTarget].health <= 0)
+                        if (_buildings[_units[index].target].building.id == Data.BuildingID.wall && _units[index].mainTarget >= 0 && _buildings[_units[index].mainTarget].health <= 0)
                         {
                             _units[index].target = -1;
                         }
@@ -770,12 +783,14 @@ namespace AhmetsHub.ClashOfPirates
                                 {
                                     switch (_buildings[_units[index].target].building.id)
                                     {
-                                        case Data.BuildingID.islandhall:
+                                        case Data.BuildingID.townhall:
                                         case Data.BuildingID.goldmine:
                                         case Data.BuildingID.goldstorage:
-                                        case Data.BuildingID.fisher:
-                                        case Data.BuildingID.fishstorage:
-                                            if(_units[index].unit.priority != Data.TargetPriority.resources)
+                                        case Data.BuildingID.elixirmine:
+                                        case Data.BuildingID.elixirstorage:
+                                        case Data.BuildingID.darkelixirmine:
+                                        case Data.BuildingID.darkelixirstorage:
+                                            if (_units[index].unit.priority != Data.TargetPriority.resources)
                                             {
                                                 multiplier = _units[index].unit.priorityMultiplier;
                                             }
@@ -857,18 +872,18 @@ namespace AhmetsHub.ClashOfPirates
             // TODO: Larger mass of units is priority
             for (int i = 0; i < _units.Count; i++)
             {
-                if(_units[i].health <= 0 || i == index || _units[i].health >= _units[i].unit.health || _units[i].unit.movement == Data.UnitMoveType.fly)
+                if (_units[i].health <= 0 || i == index || _units[i].health >= _units[i].unit.health || _units[i].unit.movement == Data.UnitMoveType.fly)
                 {
                     continue;
                 }
                 float d = BattleVector2.Distance(_units[i].position, _units[index].position);
-                if(d < distance)
+                if (d < distance)
                 {
                     target = i;
                     distance = d;
                 }
             }
-            if(target >= 0)
+            if (target >= 0)
             {
                 _units[index].AssignHealerTarget(target, distance + Data.gridCellSize);
             }
@@ -884,17 +899,19 @@ namespace AhmetsHub.ClashOfPirates
                 priority = Data.TargetPriority.all;
             }
             for (int i = 0; i < _buildings.Count; i++)
-            { 
-                if(_buildings[i].health <= 0 || _buildings[i].building.id == Data.BuildingID.wall || priority != _units[index].unit.priority || !IsBuildingCanBeAttacked(_buildings[i].building.id))
+            {
+                if (_buildings[i].health <= 0 || _buildings[i].building.id == Data.BuildingID.wall || priority != _units[index].unit.priority || !IsBuildingCanBeAttacked(_buildings[i].building.id))
                 {
                     continue;
                 }
                 float distance = BattleVector2.Distance(_buildings[i].worldCenterPosition, _units[index].position);
                 switch (_buildings[i].building.id)
                 {
-                    case Data.BuildingID.islandhall:
-                    case Data.BuildingID.fisher:
-                    case Data.BuildingID.fishstorage:
+                    case Data.BuildingID.townhall:
+                    case Data.BuildingID.elixirmine:
+                    case Data.BuildingID.elixirstorage:
+                    case Data.BuildingID.darkelixirmine:
+                    case Data.BuildingID.darkelixirstorage:
                     case Data.BuildingID.goldmine:
                     case Data.BuildingID.goldstorage:
                         _units[index].resourceTargets.Add(i, distance);
@@ -966,7 +983,7 @@ namespace AhmetsHub.ClashOfPirates
             if (wallsPriority)
             {
                 var wallPath = GetPathToWall(index, ref targets);
-                if(wallPath.Item1 >= 0)
+                if (wallPath.Item1 >= 0)
                 {
                     _units[index].AssignTarget(wallPath.Item1, wallPath.Item2);
                     return;
@@ -1020,7 +1037,7 @@ namespace AhmetsHub.ClashOfPirates
                         }
                     }
                     Path path = new Path();
-                    if(path.Create(ref unlimitedSearch, unitGridPosition, new BattleVector2Int(_buildings[target.Key].building.x, _buildings[target.Key].building.y)))
+                    if (path.Create(ref unlimitedSearch, unitGridPosition, new BattleVector2Int(_buildings[target.Key].building.x, _buildings[target.Key].building.y)))
                     {
                         path.length = GetPathLength(path.points);
                         for (int i = 0; i < path.points.Count; i++)
@@ -1058,7 +1075,7 @@ namespace AhmetsHub.ClashOfPirates
             }
 
             BattleVector2Int unitGridPosition = WorldToGridPosition(_units[unitIndex].position);
-            
+
             // Get the x and y list of the building's surrounding tiles
             List<int> columns = new List<int>();
             List<int> rows = new List<int>();
@@ -1082,7 +1099,7 @@ namespace AhmetsHub.ClashOfPirates
             List<Path> tiles = new List<Path>();
             if (_units[unitIndex].unit.movement == Data.UnitMoveType.ground)
             {
-#region With Walls Effect
+                #region With Walls Effect
                 int closest = -1;
                 float distance = 99999;
                 int blocks = 999;
@@ -1142,7 +1159,7 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     for (int i = 0; i < _units.Count; i++)
                     {
-                        if(_units[i].health <= 0 || _units[i].unit.movement != Data.UnitMoveType.ground || i != unitIndex || _units[i].target < 0 || _units[i].mainTarget != buildingIndex || _units[i].mainTarget < 0 || _buildings[_units[i].mainTarget].building.id != Data.BuildingID.wall || _buildings[_units[i].mainTarget].health <= 0)
+                        if (_units[i].health <= 0 || _units[i].unit.movement != Data.UnitMoveType.ground || i != unitIndex || _units[i].target < 0 || _units[i].mainTarget != buildingIndex || _units[i].mainTarget < 0 || _buildings[_units[i].mainTarget].building.id != Data.BuildingID.wall || _buildings[_units[i].mainTarget].health <= 0)
                         {
                             continue;
                         }
@@ -1153,7 +1170,7 @@ namespace AhmetsHub.ClashOfPirates
                             continue;
                         }
                         // float dis = GetPathLength(points, false);
-                        if(id <= Data.battleGroupWallAttackRadius)
+                        if (id <= Data.battleGroupWallAttackRadius)
                         {
                             Vector2Int end = _units[i].path.points.Last().Location;
                             Path path = new Path();
@@ -1185,11 +1202,11 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     return (buildingIndex, tiles[closest]);
                 }
-#endregion
+                #endregion
             }
             else
             {
-#region Without Walls Effect
+                #region Without Walls Effect
                 int closest = -1;
                 float distance = 99999;
                 for (int x = 0; x < columns.Count; x++)
@@ -1199,7 +1216,7 @@ namespace AhmetsHub.ClashOfPirates
                         if (columns[x] >= 0 && rows[y] >= 0 && columns[x] < Data.gridSize && rows[y] < Data.gridSize)
                         {
                             Path path = new Path();
-                            if(path.Create(ref unlimitedSearch, new BattleVector2Int(columns[x], rows[y]), unitGridPosition))
+                            if (path.Create(ref unlimitedSearch, new BattleVector2Int(columns[x], rows[y]), unitGridPosition))
                             {
                                 path.length = GetPathLength(path.points);
                                 if (path.length < distance)
@@ -1212,12 +1229,12 @@ namespace AhmetsHub.ClashOfPirates
                         }
                     }
                 }
-                if(closest >= 0)
+                if (closest >= 0)
                 {
                     tiles[closest].points.Reverse();
                     return (buildingIndex, tiles[closest]);
                 }
-#endregion
+                #endregion
             }
             return (-1, null);
         }
@@ -1229,7 +1246,7 @@ namespace AhmetsHub.ClashOfPirates
                 for (int y = _buildings[buildingIndex].building.y; y < _buildings[buildingIndex].building.y + _buildings[buildingIndex].building.columns; y++)
                 {
                     float distance = BattleVector2.Distance(GridToWorldPosition(new BattleVector2Int(x, y)), _units[unitIndex].position);
-                    if(distance <= _units[unitIndex].unit.attackRange)
+                    if (distance <= _units[unitIndex].unit.attackRange)
                     {
                         return true;
                     }
@@ -1241,7 +1258,7 @@ namespace AhmetsHub.ClashOfPirates
         private static float GetPathLength(IList<Cell> path, bool includeCellSize = true)
         {
             float length = 0;
-            if(path != null && path.Count > 1)
+            if (path != null && path.Count > 1)
             {
                 for (int i = 1; i < path.Count; i++)
                 {
@@ -1261,7 +1278,7 @@ namespace AhmetsHub.ClashOfPirates
             {
                 length = 0;
                 points = null;
-                blocks = new List<Tile>(); 
+                blocks = new List<Tile>();
             }
             public bool Create(ref AStarSearch search, BattleVector2Int start, BattleVector2Int end)
             {
@@ -1298,8 +1315,8 @@ namespace AhmetsHub.ClashOfPirates
 
         private static BattleVector2 GetPathPosition(IList<Cell> path, float t)
         {
-            if(t < 0) { t = 0; }
-            if(t > 1) { t = 1; }
+            if (t < 0) { t = 0; }
+            if (t > 1) { t = 1; }
             float totalLength = GetPathLength(path);
             float length = 0;
             if (path != null && path.Count > 1)
@@ -1349,7 +1366,7 @@ namespace AhmetsHub.ClashOfPirates
                 float diff_y = a.y - b.y;
                 return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y);
             }
-            
+
             public static float Distance(BattleVector2Int a, BattleVector2Int b)
             {
                 return Distance(new BattleVector2(a.x, a.y), new BattleVector2(b.x, b.y));
@@ -1395,6 +1412,6 @@ namespace AhmetsHub.ClashOfPirates
             }
             return true;
         }
-    
+
     }
 }

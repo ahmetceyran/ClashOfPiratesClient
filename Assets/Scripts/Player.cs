@@ -9,7 +9,7 @@ namespace AhmetsHub.ClashOfPirates
     {
 
         public Data.Player data = new Data.Player();
-        private static Player _instance = null; public static Player instanse {get {return _instance; }}
+        private static Player _instance = null; public static Player instanse { get { return _instance; } }
         public Data.InitializationData initializationData = new Data.InitializationData();
         private bool _inBattle = false; public static bool inBattle { get { return instanse._inBattle; } set { instanse._inBattle = value; } }
 
@@ -36,11 +36,11 @@ namespace AhmetsHub.ClashOfPirates
 
         private void Update()
         {
-            if(connected)
+            if (connected)
             {
-                if(!_inBattle)
+                if (!_inBattle)
                 {
-                    if(timer <= 0)
+                    if (timer <= 0)
                     {
                         updating = true;
                         timer = syncTime;
@@ -94,13 +94,13 @@ namespace AhmetsHub.ClashOfPirates
                             Debug.Log("No resources");
                             break;
                         case 3:
-                            Debug.Log("Max Level");
+                            Debug.Log("Max level");
                             break;
                         case 4:
                             Debug.Log("Place taken");
                             break;
                         case 5:
-                            Debug.Log("No Builder");
+                            Debug.Log("No builder");
                             break;
                         case 6:
                             Debug.Log("Max limit reached");
@@ -113,9 +113,9 @@ namespace AhmetsHub.ClashOfPirates
                     int replaceY = packet.ReadInt();
                     long replaceID = packet.ReadLong();
 
-                    for(int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
+                    for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
                     {
-                        if(UI_Main.instanse._grid.buildings[i].databaseID == replaceID)
+                        if (UI_Main.instanse._grid.buildings[i].databaseID == replaceID)
                         {
                             switch (replaceResponse)
                             {
@@ -123,9 +123,9 @@ namespace AhmetsHub.ClashOfPirates
                                     Debug.Log("No building");
                                     break;
                                 case 1:
-                                    Debug.Log("Replaced successfully");
+                                    Debug.Log("Replace successfully");
                                     UI_Main.instanse._grid.buildings[i].PlacedOnGrid(replaceX, replaceY);
-                                    if(UI_Main.instanse._grid.buildings[i] != Building.selectedInstanse)
+                                    if (UI_Main.instanse._grid.buildings[i] != Building.selectedInstanse)
                                     {
 
                                     }
@@ -143,7 +143,7 @@ namespace AhmetsHub.ClashOfPirates
                 case RequestsID.COLLECT:
                     long db = packet.ReadLong();
                     int collected = packet.ReadInt();
-                    for(int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
+                    for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
                     {
                         if(db == UI_Main.instanse._grid.buildings[i].data.databaseID)
                         {
@@ -175,10 +175,10 @@ namespace AhmetsHub.ClashOfPirates
                             Debug.Log("No resources");
                             break;
                         case 3:
-                            Debug.Log("Max Level");
+                            Debug.Log("Max level");
                             break;
                         case 5:
-                            Debug.Log("No Builder");
+                            Debug.Log("No builder");
                             break;
                         case 6:
                             Debug.Log("Max limit reached");
@@ -187,9 +187,9 @@ namespace AhmetsHub.ClashOfPirates
                     break;
                 case RequestsID.INSTANTBUILD:
                     response = packet.ReadInt();
-                    if(response == 2)
+                    if (response == 2)
                     {
-                        Debug.Log("No diamonds.");
+                        Debug.Log("No gems.");
                     }
                     else if(response == 1)
                     {
@@ -203,19 +203,19 @@ namespace AhmetsHub.ClashOfPirates
                     break;
                 case RequestsID.TRAIN:
                     response = packet.ReadInt();
-                    if(response == 4)
+                    if (response == 4)
                     {
                         Debug.Log("Server unit not found.");
                     }
-                    else if(response == 3)
+                    if (response == 3)
                     {
                         Debug.Log("No capacity.");
                     }
-                    else if(response == 2)
+                    if (response == 2)
                     {
                         Debug.Log("No resources.");
                     }
-                    else if(response == 1)
+                    else if (response == 1)
                     {
                         Debug.Log("Train started.");
                         RushSyncRequest();
@@ -249,7 +249,7 @@ namespace AhmetsHub.ClashOfPirates
                     List<Data.BattleStartBuildingData> buildings = null;
                     int wt = 0;
                     int lt = 0;
-                    if(confirmed)
+                    if (confirmed)
                     {
                         wt = packet.ReadInt();
                         lt = packet.ReadInt();
@@ -262,10 +262,11 @@ namespace AhmetsHub.ClashOfPirates
                     int stars = packet.ReadInt();
                     int unitsDeployed = packet.ReadInt();
                     int lootedGold = packet.ReadInt();
-                    int lootedFish = packet.ReadInt();
+                    int lootedElixir = packet.ReadInt();
+                    int lootedDark = packet.ReadInt();
                     int trophies = packet.ReadInt();
                     int frame = packet.ReadInt();
-                    UI_Battle.instanse.BattleEnded(stars, unitsDeployed, lootedGold, lootedFish, trophies, frame);
+                    UI_Battle.instanse.BattleEnded(stars, unitsDeployed, lootedGold, lootedElixir, lootedDark, trophies, frame);
                     break;
             }
         }
@@ -282,7 +283,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             data = player;
 
-            if(_inBattle)
+            if (_inBattle)
             {
                 return;
             }
@@ -290,10 +291,13 @@ namespace AhmetsHub.ClashOfPirates
             int gold = 0;
             int maxGold = 0;
 
-            int fish = 0;
-            int maxFish = 0;
+            int elixir = 0;
+            int maxElixir = 0;
 
-            int diamonds = player.diamonds;
+            int darkElixir = 0;
+            int maxDarkElixir = 0;
+
+            int gems = player.gems;
 
             if(player.buildings != null && player.buildings.Count > 0)
             {
@@ -317,36 +321,26 @@ namespace AhmetsHub.ClashOfPirates
                             UI_Main.instanse._grid.buildings.Add(building);
                         }
                     }
-
-                    if(building.buildBar == null)
+                    
+                    if (building.buildBar == null)
                     {
                         building.buildBar = Instantiate(UI_Main.instanse.barBuild, UI_Main.instanse.buttonsParent);
                         building.buildBar.gameObject.SetActive(false);
                     }
 
                     building.data = player.buildings[i];
-                    switch(building.id)
+                    switch (building.id)
                     {
-                        case Data.BuildingID.islandhall:
-                            maxFish += building.data.fishCapacity;
-                            fish += building.data.fishStorage;
+                        case Data.BuildingID.townhall:
                             maxGold += building.data.goldCapacity;
                             gold += building.data.goldStorage;
-                            break;
-                        case Data.BuildingID.fisher:
-                            if(building.collectButton == null)
-                            {
-                                building.collectButton = Instantiate(UI_Main.instanse.buttonCollectFish, UI_Main.instanse.buttonsParent);
-                                building.collectButton.button.onClick.AddListener(building.Collect);
-                                building.collectButton.gameObject.SetActive(false);
-                            }
-                            break;
-                        case Data.BuildingID.fishstorage:
-                            maxFish += building.data.fishCapacity;
-                            fish += building.data.fishStorage;
+                            maxElixir += building.data.elixirCapacity;
+                            elixir += building.data.elixirStorage;
+                            maxDarkElixir += building.data.darkCapacity;
+                            darkElixir += building.data.darkStorage;
                             break;
                         case Data.BuildingID.goldmine:
-                            if(building.collectButton == null)
+                            if (building.collectButton == null)
                             {
                                 building.collectButton = Instantiate(UI_Main.instanse.buttonCollectGold, UI_Main.instanse.buttonsParent);
                                 building.collectButton.button.onClick.AddListener(building.Collect);
@@ -357,21 +351,45 @@ namespace AhmetsHub.ClashOfPirates
                             maxGold += building.data.goldCapacity;
                             gold += building.data.goldStorage;
                             break;
+                        case Data.BuildingID.elixirmine:
+                            if (building.collectButton == null)
+                            {
+                                building.collectButton = Instantiate(UI_Main.instanse.buttonCollectElixir, UI_Main.instanse.buttonsParent);
+                                building.collectButton.button.onClick.AddListener(building.Collect);
+                                building.collectButton.gameObject.SetActive(false);
+                            }
+                            break;
+                        case Data.BuildingID.elixirstorage:
+                            maxElixir += building.data.elixirCapacity;
+                            elixir += building.data.elixirStorage;
+                            break;
+                        case Data.BuildingID.darkelixirmine:
+                            if (building.collectButton == null)
+                            {
+                                building.collectButton = Instantiate(UI_Main.instanse.buttonCollectDarkElixir, UI_Main.instanse.buttonsParent);
+                                building.collectButton.button.onClick.AddListener(building.Collect);
+                                building.collectButton.gameObject.SetActive(false);
+                            }
+                            break;
+                        case Data.BuildingID.darkelixirstorage:
+                            maxDarkElixir += building.data.darkCapacity;
+                            darkElixir += building.data.darkStorage;
+                            break;
                     }
                     building.AdjustUI();
                 }
             }
 
-            for(int i = 0; i < player.units.Count; i++)
+            for (int i = 0; i < player.units.Count; i++)
             {
 
             }
 
-            UI_Main.instanse._goldText.text = " : " + gold + " / " + maxGold;
-            UI_Main.instanse._fishText.text = " : " + fish + " / " + maxFish;
-            UI_Main.instanse._diamondsText.text = " : " + diamonds.ToString();
+            UI_Main.instanse._goldText.text = gold + "/" + maxGold;
+            UI_Main.instanse._elixirText.text = elixir + "/" + maxElixir;
+            UI_Main.instanse._gemsText.text = gems.ToString();
 
-            if(UI_Train.instanse.isOpen)
+            if (UI_Train.instanse.isOpen)
             {
                 UI_Train.instanse.Sync();
             }

@@ -11,8 +11,8 @@ namespace AhmetsHub.ClashOfPirates
 
         [SerializeField] public GameObject _elements = null;
         [SerializeField] public TextMeshProUGUI _goldText = null;
-        [SerializeField] public TextMeshProUGUI _fishText = null;
-        [SerializeField] public TextMeshProUGUI _diamondsText = null;
+        [SerializeField] public TextMeshProUGUI _elixirText = null;
+        [SerializeField] public TextMeshProUGUI _gemsText = null;
         [SerializeField] private Button _shopButton = null;
         [SerializeField] private Button _battleButton = null;
 
@@ -22,10 +22,9 @@ namespace AhmetsHub.ClashOfPirates
         [Header("Buttons")]
         public Transform buttonsParent = null;
         public UI_Button buttonCollectGold = null;
-        public UI_Button buttonCollectFish = null;
+        public UI_Button buttonCollectElixir = null;
+        public UI_Button buttonCollectDarkElixir = null;
         public UI_Bar barBuild = null;
-
-
         private static UI_Main _instance = null; public static UI_Main instanse { get { return _instance; } }
 
         private bool _active = true;public bool isActive { get { return _active; } }
@@ -61,7 +60,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void SetStatus(bool status)
         {
-            if(!status)
+            if (!status)
             {
                 OnLeave();
             }

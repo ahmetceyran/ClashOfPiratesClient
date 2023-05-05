@@ -7,7 +7,7 @@ namespace AhmetsHub.ClashOfPirates
 
     public class UI_Train : MonoBehaviour
     {
-        
+
         [SerializeField] public GameObject _elements = null;
         [SerializeField] private Button _closeButton = null;
 
@@ -18,7 +18,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private List<UI_UnitsTraining> trainigItems = new List<UI_UnitsTraining>();
         [SerializeField] private List<UI_Unit> uiUnits = new List<UI_Unit>();
-       
+
         private void Awake()
         {
             _instance = this;
@@ -40,19 +40,19 @@ namespace AhmetsHub.ClashOfPirates
         }
 
         public void Initialize()
-    {
-        for (int i = 0; i < uiUnits.Count; i++)
         {
-            for (int j = 0; j < Player.instanse.initializationData.serverUnits.Count; j++)
+            for (int i = 0; i < uiUnits.Count; i++)
             {
-                if (uiUnits[i].id == Player.instanse.initializationData.serverUnits[j].id)
+                for (int j = 0; j < Player.instanse.initializationData.serverUnits.Count; j++)
                 {
-                    uiUnits[i].Initialize(Player.instanse.initializationData.serverUnits[j]);
-                    break;
+                    if (uiUnits[i].id == Player.instanse.initializationData.serverUnits[j].id)
+                    {
+                        uiUnits[i].Initialize(Player.instanse.initializationData.serverUnits[j]);
+                        break;
+                    }
                 }
             }
         }
-    }
 
         private void Start()
         {

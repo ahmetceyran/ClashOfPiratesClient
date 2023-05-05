@@ -7,6 +7,7 @@ namespace AhmetsHub.ClashOfPirates
 
     public class UI_BuildingOptions : MonoBehaviour
     {
+
         [SerializeField] public GameObject _elements = null;
 
         private static UI_BuildingOptions _instance = null; public static UI_BuildingOptions instanse { get { return _instance; } }
@@ -17,10 +18,10 @@ namespace AhmetsHub.ClashOfPirates
         public RectTransform trainPanel = null;
 
         public Button infoButton = null;
-        public Button uupgradeButton = null;
+        public Button upgradeButton = null;
         public Button instantButton = null;
         public Button trainButton = null;
-       
+
         private void Awake()
         {
             _instance = this;
@@ -38,5 +39,6 @@ namespace AhmetsHub.ClashOfPirates
             }
             _elements.SetActive(status);
         }
+
     }
 }

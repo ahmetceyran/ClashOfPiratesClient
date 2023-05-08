@@ -42,9 +42,12 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     if (timer <= 0)
                     {
-                        updating = true;
-                        timer = syncTime;
-                        SendSyncRequest();
+                        if(updating == false)
+                        {
+                            updating = true;
+                            timer = syncTime;
+                            SendSyncRequest();
+                        }
                     }
                     else
                     {

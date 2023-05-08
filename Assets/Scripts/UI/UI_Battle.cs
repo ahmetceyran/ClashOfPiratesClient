@@ -26,6 +26,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _findButton = null;
         [SerializeField] private Button _closeButton = null;
         [SerializeField] private Button _okButton = null;
+        [SerializeField] private Button _surrenderButton = null;
         private List<BattleUnit> unitsOnGrid = new List<BattleUnit>();
         public List<BuildingOnGrid> buildingsOnGrid = new List<BuildingOnGrid>();
         private DateTime baseTime;
@@ -59,6 +60,7 @@ namespace AhmetsHub.ClashOfPirates
             _closeButton.onClick.AddListener(Close);
             _findButton.onClick.AddListener(Find);
             _okButton.onClick.AddListener(CloseEndPanel);
+            _surrenderButton.onClick.AddListener(Surrender);
         }
 
         private void CloseEndPanel()
@@ -87,8 +89,8 @@ namespace AhmetsHub.ClashOfPirates
 
         public void NoTarget()
         {
-            _findButton.gameObject.SetActive(true);
-            _closeButton.gameObject.SetActive(true);
+            Close();
+            // TODO : message box
         }
 
         public void Display(List<Data.Building> buildings, long defender)
@@ -140,7 +142,7 @@ namespace AhmetsHub.ClashOfPirates
                 battleBuildings.Add(building);
             }
 
-            _timerText.text = TimeSpan.FromSeconds(Data.battleDuration).ToString(@"mm\:ss");
+            _timerText.text = TimeSpan.FromSeconds(Data.battlePrepDuration).ToString(@"mm\:ss");
 
             ClearBuildingsOnGrid();
             ClearUnitsOnGrid();
@@ -219,8 +221,10 @@ namespace AhmetsHub.ClashOfPirates
 
         private void StartBattle()
         {
+            _timerText.text = TimeSpan.FromSeconds(Data.battleDuration).ToString(@"mm\:ss");
             _findButton.gameObject.SetActive(false);
             _closeButton.gameObject.SetActive(false);
+            _surrenderButton.gameObject.SetActive(true);
             readyToStart = false;
             baseTime = DateTime.Now;
             Packet packet = new Packet();
@@ -235,6 +239,9 @@ namespace AhmetsHub.ClashOfPirates
 
         public void BattleEnded(int stars, int unitsDeployed, int lootedGold, int lootedElixir, int lootedDark, int trophies, int frame)
         {
+            _findButton.gameObject.SetActive(false);
+            _closeButton.gameObject.SetActive(false);
+            _surrenderButton.gameObject.SetActive(false);
             var looted = battle.GetlootedResources();
             Debug.Log("Battle Ended.");
             Debug.Log("Frame -> Client:" + battle.frameCount + " Server:" + frame);
@@ -280,6 +287,12 @@ namespace AhmetsHub.ClashOfPirates
 
         public void EndBattle(bool surrender, int surrenderFrame)
         {
+            _findButton.gameObject.SetActive(false);
+            _closeButton.gameObject.SetActive(false);
+            _surrenderButton.gameObject.SetActive(false);
+            battle.end = true;
+            battle.surrender = surrender;
+            isStarted = false;
             Packet packet = new Packet();
             packet.Write((int)Player.RequestsID.BATTLEEND);
             packet.Write(surrender);
@@ -367,6 +380,10 @@ namespace AhmetsHub.ClashOfPirates
                 ClearUnitsOnGrid();
                 ClearUnits();
             }
+            else
+            {
+                _endPanel.SetActive(false);
+            }
             Player.inBattle = status;
             _active = status;
             _elements.SetActive(status);
@@ -418,19 +435,24 @@ namespace AhmetsHub.ClashOfPirates
                         battle.ExecuteFrame();
                         if ((float)battle.frameCount * Data.battleFrameRate >= battle.duration || Math.Abs(battle.percentage - 1d) <= 0.0001d)
                         {
-                            Debug.Log("End called");
-                            battle.end = true;
-                            isStarted = false;
                             EndBattle(false, battle.frameCount);
                         }
                         else if (surrender || (!battle.IsAliveUnitsOnGrid() && !HaveUnitLeftToPlace()))
                         {
-                            Debug.Log("Surrender called");
-                            battle.end = true;
-                            battle.surrender = true;
-                            isStarted = false;
                             EndBattle(true, battle.frameCount);
                         }
+                    }
+                }
+                else if(readyToStart)
+                {
+                    TimeSpan span = DateTime.Now - baseTime;
+                    if(span.TotalSeconds >= Data.battlePrepDuration)
+                    {
+                        StartBattle();
+                    }
+                    else
+                    {
+                        _timerText.text = TimeSpan.FromSeconds(Data.battlePrepDuration - span.TotalSeconds).ToString(@"mm\:ss");
                     }
                 }
                 UpdateUnits();

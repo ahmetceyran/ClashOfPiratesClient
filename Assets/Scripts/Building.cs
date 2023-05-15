@@ -70,7 +70,7 @@ namespace AhmetsHub.ClashOfPirates
                     case Data.BuildingID.goldmine:
                         if (data.goldStorage >= Data.minGoldCollect)
                         {
-                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
+                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false && Player.instanse.gold < Player.instanse.maxGold);
                         }
                         else
                         {
@@ -80,7 +80,7 @@ namespace AhmetsHub.ClashOfPirates
                     case Data.BuildingID.elixirmine:
                         if (data.elixirStorage >= Data.minElixirCollect)
                         {
-                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
+                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false && Player.instanse.elixir < Player.instanse.maxElixir);
                         }
                         else
                         {
@@ -90,7 +90,7 @@ namespace AhmetsHub.ClashOfPirates
                     case Data.BuildingID.darkelixirmine:
                         if (data.darkStorage >= Data.minDarkElixirCollect)
                         {
-                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false);
+                            collectButton.gameObject.SetActive(!collecting && data.isConstructing == false && Player.instanse.darkElixir < Player.instanse.maxDarkElixir);
                         }
                         else
                         {

@@ -197,6 +197,8 @@ namespace AhmetsHub.ClashOfPirates
 
             _findButton.gameObject.SetActive(true);
             _closeButton.gameObject.SetActive(true);
+            _surrenderButton.gameObject.SetActive(false);
+            baseTime = DateTime.Now;
             SetStatus(true);
 
             toAdd.Clear();
@@ -306,7 +308,7 @@ namespace AhmetsHub.ClashOfPirates
         private static UI_Battle _instance = null; public static UI_Battle instanse { get { return _instance; } }
         private bool _active = true; public bool isActive { get { return _active; } }
 
-        public int selectedUnit = -1;
+        [HideInInspector] public int selectedUnit = -1;
 
         private List<UI_BattleUnit> units = new List<UI_BattleUnit>();
 

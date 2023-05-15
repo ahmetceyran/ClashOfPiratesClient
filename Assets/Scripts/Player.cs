@@ -151,7 +151,18 @@ namespace AhmetsHub.ClashOfPirates
                         if(db == UI_Main.instanse._grid.buildings[i].data.databaseID)
                         {
                             UI_Main.instanse._grid.buildings[i].collecting = false;
-                            //UI_Main.instanse._grid.buildings[i].data.storage -= collected;
+                            switch(UI_Main.instanse._grid.buildings[i].id)
+                            {
+                                case Data.BuildingID.goldmine:
+                                    UI_Main.instanse._grid.buildings[i].data.goldStorage -= collected;
+                                    break;
+                                case Data.BuildingID.elixirmine:
+                                    UI_Main.instanse._grid.buildings[i].data.elixirStorage -= collected;
+                                    break;
+                                case Data.BuildingID.darkelixirmine:
+                                    UI_Main.instanse._grid.buildings[i].data.darkStorage -= collected;
+                                    break;
+                            }
                             UI_Main.instanse._grid.buildings[i].AdjustUI();
                             break;
                         }
@@ -282,6 +293,15 @@ namespace AhmetsHub.ClashOfPirates
             Sender.TCP_Send(p);
         }
 
+        [HideInInspector] public int gold = 0;
+        [HideInInspector] public int maxGold = 0;
+
+        [HideInInspector] public int elixir = 0;
+        [HideInInspector] public int maxElixir = 0;
+
+        [HideInInspector] public int darkElixir = 0;
+        [HideInInspector] public int maxDarkElixir = 0;
+
         public void SyncData(Data.Player player)
         {
             data = player;
@@ -291,14 +311,14 @@ namespace AhmetsHub.ClashOfPirates
                 return;
             }
 
-            int gold = 0;
-            int maxGold = 0;
+            gold = 0;
+            maxGold = 0;
 
-            int elixir = 0;
-            int maxElixir = 0;
+            elixir = 0;
+            maxElixir = 0;
 
-            int darkElixir = 0;
-            int maxDarkElixir = 0;
+            darkElixir = 0;
+            maxDarkElixir = 0;
 
             int gems = player.gems;
 

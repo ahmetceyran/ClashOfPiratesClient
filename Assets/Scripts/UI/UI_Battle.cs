@@ -203,7 +203,7 @@ namespace AhmetsHub.ClashOfPirates
 
             toAdd.Clear();
             battle = new Battle();
-            battle.Initialize(battleBuildings, DateTime.Now, BuildingAttackCallBack, BuildingDestroyedCallBack, BuildingDamageCallBack);
+            battle.Initialize(battleBuildings, DateTime.Now, BuildingAttackCallBack, BuildingDestroyedCallBack, BuildingDamageCallBack, StarGained);
 
             _percentageText.text = (battle.percentage * 100f).ToString("F2") + "%";
             UpdateLoots();
@@ -590,6 +590,11 @@ namespace AhmetsHub.ClashOfPirates
                     unitsOnGrid.Add(unit);
                 }
             }
+        }
+
+        public void StarGained()
+        {
+
         }
 
         public void UnitAttackCallBack(long id, Battle.BattleVector2 target)

@@ -5,7 +5,6 @@ namespace AhmetsHub.ClashOfPirates
     using UnityEngine;
     using UnityEngine.EventSystems;
     using DevelopersHub.RealtimeNetworking.Client;
-    using DevelopersHub.ClashOfWhatecer;
 
     public class CameraController : MonoBehaviour
     {

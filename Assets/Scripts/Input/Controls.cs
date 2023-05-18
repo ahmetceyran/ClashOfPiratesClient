@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
 
-namespace DevelopersHub.ClashOfWhatecer
+namespace AhmetsHub.ClashOfPirates
 {
     public partial class @Controls : IInputActionCollection2, IDisposable
     {

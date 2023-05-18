@@ -21,7 +21,7 @@ namespace AhmetsHub.ClashOfPirates
         private AStarSearch search = null;
         private AStarSearch unlimitedSearch = null;
         private List<Tile> blockedTiles = new List<Tile>();
-        private List<Projectile> projectiles = new List<Projectile>();
+        public List<Projectile> projectiles = new List<Projectile>();
         public double percentage = 0;
         public bool end = false;
         public bool surrender = false;
@@ -35,6 +35,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public int winTrophies = 0;
         public int loseTrophies = 0;
+        private int projectileCount = 0;
 
         public (int, int, int, int, int, int) GetlootedResources()
         {
@@ -87,6 +88,8 @@ namespace AhmetsHub.ClashOfPirates
         public delegate void FloatCallback(long index, float value);
         public delegate void DoubleCallback(long index, double value);
         public delegate void BlankCallback();
+        public delegate void ProjectileCallback(int id, BattleVector2 current, BattleVector2 target);
+        public ProjectileCallback projectileCallback = null;
 
         public int GetTrophies()
         {
@@ -111,12 +114,15 @@ namespace AhmetsHub.ClashOfPirates
 
         public class Projectile
         {
+            public int id = 0;
             public int target = -1;
             public float damage = 0;
             public float splash = 0;
             public float timer = 0;
             public TargetType type = TargetType.unit;
             public bool heal = false;
+            public bool follow = true;
+            public BattleVector2 position = new BattleVector2();
         }
 
         public enum TargetType
@@ -334,7 +340,7 @@ namespace AhmetsHub.ClashOfPirates
             public FloatCallback healCallback = null;
         }
 
-        public void Initialize(List<Building> buildings, DateTime time, AttackCallback attackCallback = null, DoubleCallback destroyCallback = null, FloatCallback damageCallback = null, BlankCallback starGained = null) // ok
+        public void Initialize(List<Building> buildings, DateTime time, AttackCallback attackCallback = null, DoubleCallback destroyCallback = null, FloatCallback damageCallback = null, BlankCallback starGained = null, ProjectileCallback projectileCallback = null)
         {
             baseTime = time;
             duration = Data.battleDuration;
@@ -345,8 +351,9 @@ namespace AhmetsHub.ClashOfPirates
             townhallDestroyed = false;
             completelyDestroyed = false;
             end = false;
+            projectileCount = 0;
             surrender = false;
-
+            this.projectileCallback = projectileCallback;
             _buildings = buildings;
             grid = new Grid(Data.gridSize, Data.gridSize);
             unlimitedGrid = new Grid(Data.gridSize, Data.gridSize);
@@ -476,6 +483,7 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     unitsDeployed += _unitsToAdd[i].unit.unit.hosing;
                     _units.Insert(addIndex, _unitsToAdd[i].unit);
+                    addIndex++;
                     if (_unitsToAdd[i].callback != null)
                     {
                         _unitsToAdd[i].callback.Invoke(_unitsToAdd[i].unit.unit.databaseID);
@@ -584,7 +592,15 @@ namespace AhmetsHub.ClashOfPirates
                                 projectile.timer = distance / _buildings[index].building.rangedSpeed;
                                 projectile.damage = _buildings[index].building.damage;
                                 projectile.splash = _buildings[index].building.splashRange;
+                                projectile.follow = true;
+                                projectile.position = _buildings[index].worldCenterPosition;
+                                projectileCount++;
+                                projectile.id = projectileCount;
                                 projectiles.Add(projectile);
+                                if (projectileCallback != null)
+                                {
+                                    projectileCallback.Invoke(projectile.id, _buildings[index].worldCenterPosition, _units[_buildings[index].target].position);
+                                }
                             }
                             else
                             {
@@ -689,8 +705,16 @@ namespace AhmetsHub.ClashOfPirates
                             projectile.target = _units[index].target;
                             projectile.timer = distance / _units[index].unit.rangedSpeed;
                             projectile.damage = _units[index].unit.damage;
+                            projectile.follow = true;
+                            projectile.position = _units[index].position;
                             projectile.heal = true;
+                            projectileCount++;
+                            projectile.id = projectileCount;
                             projectiles.Add(projectile);
+                            if (projectileCallback != null)
+                            {
+                                projectileCallback.Invoke(projectile.id, _units[index].position, _units[_units[index].target].position);
+                            }
                         }
                         else
                         {
@@ -828,7 +852,15 @@ namespace AhmetsHub.ClashOfPirates
                                         projectile.target = _units[index].target;
                                         projectile.timer = distance / _units[index].unit.rangedSpeed;
                                         projectile.damage = _units[index].unit.damage * multiplier;
+                                        projectile.follow = true;
+                                        projectile.position = _units[index].position;
+                                        projectileCount++;
+                                        projectile.id = projectileCount;
                                         projectiles.Add(projectile);
+                                        if (projectileCallback != null)
+                                        {
+                                            projectileCallback.Invoke(projectile.id, _units[index].position, _buildings[_units[index].target].worldCenterPosition);
+                                        }
                                     }
                                     else
                                     {
@@ -900,7 +932,7 @@ namespace AhmetsHub.ClashOfPirates
             }
             for (int i = 0; i < _buildings.Count; i++)
             {
-                if (_buildings[i].health <= 0 || _buildings[i].building.id == Data.BuildingID.wall || priority != _units[index].unit.priority || !IsBuildingCanBeAttacked(_buildings[i].building.id))
+                if (_buildings[i].health <= 0 || _buildings[i].building.id == Data.BuildingID.wall || !IsBuildingCanBeAttacked(_buildings[i].building.id))
                 {
                     continue;
                 }
@@ -970,10 +1002,6 @@ namespace AhmetsHub.ClashOfPirates
                 if (temp.Count > 0)
                 {
                     AssignTarget(index, ref temp, priority == Data.TargetPriority.walls);
-                }
-                else
-                {
-                    return;
                 }
             }
         }

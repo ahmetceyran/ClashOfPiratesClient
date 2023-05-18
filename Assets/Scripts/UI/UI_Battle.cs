@@ -68,10 +68,19 @@ namespace AhmetsHub.ClashOfPirates
             Close();
         }
 
+        private void MessageResponded(int layoutIndex, int buttonIndex)
+        {
+            if (layoutIndex == 1)
+            {
+                MessageBox.Close();
+            }
+        }
+
         private void Close()
         {
             Player.instanse.SyncData(Player.instanse.data);
             isStarted = false;
+            readyToStart = false;
             SetStatus(false);
             UI_Main.instanse.SetStatus(true);
         }
@@ -90,7 +99,7 @@ namespace AhmetsHub.ClashOfPirates
         public void NoTarget()
         {
             Close();
-            // TODO : message box
+            MessageBox.Open(1, 0.8f, true, MessageResponded, new string[] { "There is no target to attack at this moment. Please try again later." }, new string[] { "OK" });
         }
 
         public void Display(List<Data.Building> buildings, long defender)
@@ -445,7 +454,7 @@ namespace AhmetsHub.ClashOfPirates
                         }
                     }
                 }
-                else if(readyToStart)
+                else if (readyToStart)
                 {
                     TimeSpan span = DateTime.Now - baseTime;
                     if(span.TotalSeconds >= Data.battlePrepDuration)

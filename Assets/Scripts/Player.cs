@@ -4,6 +4,7 @@ namespace AhmetsHub.ClashOfPirates
     using System.Collections.Generic;
     using UnityEngine;
     using DevelopersHub.RealtimeNetworking.Client;
+    using UnityEngine.SceneManagement;
 
     public class Player : MonoBehaviour
     {
@@ -21,7 +22,12 @@ namespace AhmetsHub.ClashOfPirates
         private void Start()
         {
             RealtimeNetworking.OnPacketReceived += ReceivedPaket;
-            ConnectToServer();
+            RealtimeNetworking.OnDisconnectedFromServer += DisconnectedFromServer;
+            string device = SystemInfo.deviceUniqueIdentifier;
+            Packet packet = new Packet();
+            packet.Write((int)RequestsID.AUTH);
+            packet.Write(device);
+            Sender.TCP_Send(packet);
         }
 
         private void Awake()
@@ -60,228 +66,235 @@ namespace AhmetsHub.ClashOfPirates
 
         private void ReceivedPaket(Packet packet)
         {
-            int id = packet.ReadInt();
-            long databaseID = 0;
-            int response = 0;
-
-            switch ((RequestsID)id)
+            try
             {
-                case RequestsID.AUTH:
-                    connected = true;
-                    updating = true;
-                    timer = 0;
-                    string authData = packet.ReadString();
-                    initializationData = Data.Desrialize<Data.InitializationData>(authData);
+                int id = packet.ReadInt();
+                long databaseID = 0;
+                int response = 0;
+
+                switch ((RequestsID)id)
+                {
+                    case RequestsID.AUTH:
+                        connected = true;
+                        updating = true;
+                        timer = 0;
+                        string authData = packet.ReadString();
+                        initializationData = Data.Desrialize<Data.InitializationData>(authData);
 
 
-                    SendSyncRequest();
-                    break;
-                case RequestsID.SYNC:
-                    string playerData = packet.ReadString();
-                    Data.Player playerSyncData = Data.Desrialize<Data.Player>(playerData);
-                    SyncData(playerSyncData);
-                    updating = false;
-                    break;
-                case RequestsID.BUILD:
-                    response = packet.ReadInt();
-                    switch (response)
-                    {
-                        case 0:
-                            Debug.Log("Unknown");
-                            break;
-                        case 1:
-                            Debug.Log("Placed successfully");
-                            RushSyncRequest();
-                            break;
-                        case 2:
-                            Debug.Log("No resources");
-                            break;
-                        case 3:
-                            Debug.Log("Max level");
-                            break;
-                        case 4:
-                            Debug.Log("Place taken");
-                            break;
-                        case 5:
-                            Debug.Log("No builder");
-                            break;
-                        case 6:
-                            Debug.Log("Max limit reached");
-                            break;
-                    }
-                    break;
-                case RequestsID.REPLACE:
-                    int replaceResponse = packet.ReadInt();
-                    int replaceX = packet.ReadInt();
-                    int replaceY = packet.ReadInt();
-                    long replaceID = packet.ReadLong();
-
-                    for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
-                    {
-                        if (UI_Main.instanse._grid.buildings[i].databaseID == replaceID)
+                        SendSyncRequest();
+                        break;
+                    case RequestsID.SYNC:
+                        string playerData = packet.ReadString();
+                        Data.Player playerSyncData = Data.Desrialize<Data.Player>(playerData);
+                        SyncData(playerSyncData);
+                        updating = false;
+                        break;
+                    case RequestsID.BUILD:
+                        response = packet.ReadInt();
+                        switch (response)
                         {
-                            switch (replaceResponse)
-                            {
-                                case 0:
-                                    Debug.Log("No building");
-                                    break;
-                                case 1:
-                                    Debug.Log("Replace successfully");
-                                    UI_Main.instanse._grid.buildings[i].PlacedOnGrid(replaceX, replaceY);
-                                    if (UI_Main.instanse._grid.buildings[i] != Building.selectedInstanse)
-                                    {
+                            case 0:
+                                Debug.Log("Unknown");
+                                break;
+                            case 1:
+                                Debug.Log("Placed successfully");
+                                RushSyncRequest();
+                                break;
+                            case 2:
+                                Debug.Log("No resources");
+                                break;
+                            case 3:
+                                Debug.Log("Max level");
+                                break;
+                            case 4:
+                                Debug.Log("Place taken");
+                                break;
+                            case 5:
+                                Debug.Log("No builder");
+                                break;
+                            case 6:
+                                Debug.Log("Max limit reached");
+                                break;
+                        }
+                        break;
+                    case RequestsID.REPLACE:
+                        int replaceResponse = packet.ReadInt();
+                        int replaceX = packet.ReadInt();
+                        int replaceY = packet.ReadInt();
+                        long replaceID = packet.ReadLong();
 
-                                    }
-                                    RushSyncRequest();
-                                    break;
-                                case 2:
-                                    Debug.Log("Place taken");
-                                    break;
-                            }
-                            UI_Main.instanse._grid.buildings[i].waitingReplaceResponse = false;
-                            break;
-                        }
-                    }
-                    break;
-                case RequestsID.COLLECT:
-                    long db = packet.ReadLong();
-                    int collected = packet.ReadInt();
-                    for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
-                    {
-                        if(db == UI_Main.instanse._grid.buildings[i].data.databaseID)
+                        for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
                         {
-                            UI_Main.instanse._grid.buildings[i].collecting = false;
-                            switch(UI_Main.instanse._grid.buildings[i].id)
+                            if (UI_Main.instanse._grid.buildings[i].databaseID == replaceID)
                             {
-                                case Data.BuildingID.goldmine:
-                                    UI_Main.instanse._grid.buildings[i].data.goldStorage -= collected;
-                                    break;
-                                case Data.BuildingID.elixirmine:
-                                    UI_Main.instanse._grid.buildings[i].data.elixirStorage -= collected;
-                                    break;
-                                case Data.BuildingID.darkelixirmine:
-                                    UI_Main.instanse._grid.buildings[i].data.darkStorage -= collected;
-                                    break;
+                                switch (replaceResponse)
+                                {
+                                    case 0:
+                                        Debug.Log("No building");
+                                        break;
+                                    case 1:
+                                        Debug.Log("Replace successfully");
+                                        UI_Main.instanse._grid.buildings[i].PlacedOnGrid(replaceX, replaceY);
+                                        if (UI_Main.instanse._grid.buildings[i] != Building.selectedInstanse)
+                                        {
+
+                                        }
+                                        RushSyncRequest();
+                                        break;
+                                    case 2:
+                                        Debug.Log("Place taken");
+                                        break;
+                                }
+                                UI_Main.instanse._grid.buildings[i].waitingReplaceResponse = false;
+                                break;
                             }
-                            UI_Main.instanse._grid.buildings[i].AdjustUI();
-                            break;
                         }
-                    }
-                    break;
-                case RequestsID.PREUPGRADE:
-                    databaseID = packet.ReadLong();
-                    string re = packet.ReadString();
-                    Data.ServerBuilding sr = Data.Desrialize<Data.ServerBuilding>(re);
-                    UI_BuildingUpgrade.instanse.Open(sr, databaseID);
-                    break;
-                case RequestsID.UPGRADE:
-                    response = packet.ReadInt();
-                    switch (response)
-                    {
-                        case 0:
-                            Debug.Log("Unknown");
-                            break;
-                        case 1:
-                            Debug.Log("Upgrade started");
+                        break;
+                    case RequestsID.COLLECT:
+                        long db = packet.ReadLong();
+                        int collected = packet.ReadInt();
+                        for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
+                        {
+                            if (db == UI_Main.instanse._grid.buildings[i].data.databaseID)
+                            {
+                                UI_Main.instanse._grid.buildings[i].collecting = false;
+                                switch (UI_Main.instanse._grid.buildings[i].id)
+                                {
+                                    case Data.BuildingID.goldmine:
+                                        UI_Main.instanse._grid.buildings[i].data.goldStorage -= collected;
+                                        break;
+                                    case Data.BuildingID.elixirmine:
+                                        UI_Main.instanse._grid.buildings[i].data.elixirStorage -= collected;
+                                        break;
+                                    case Data.BuildingID.darkelixirmine:
+                                        UI_Main.instanse._grid.buildings[i].data.darkStorage -= collected;
+                                        break;
+                                }
+                                UI_Main.instanse._grid.buildings[i].AdjustUI();
+                                break;
+                            }
+                        }
+                        break;
+                    case RequestsID.PREUPGRADE:
+                        databaseID = packet.ReadLong();
+                        string re = packet.ReadString();
+                        Data.ServerBuilding sr = Data.Desrialize<Data.ServerBuilding>(re);
+                        UI_BuildingUpgrade.instanse.Open(sr, databaseID);
+                        break;
+                    case RequestsID.UPGRADE:
+                        response = packet.ReadInt();
+                        switch (response)
+                        {
+                            case 0:
+                                Debug.Log("Unknown");
+                                break;
+                            case 1:
+                                Debug.Log("Upgrade started");
+                                RushSyncRequest();
+                                break;
+                            case 2:
+                                Debug.Log("No resources");
+                                break;
+                            case 3:
+                                Debug.Log("Max level");
+                                break;
+                            case 5:
+                                Debug.Log("No builder");
+                                break;
+                            case 6:
+                                Debug.Log("Max limit reached");
+                                break;
+                        }
+                        break;
+                    case RequestsID.INSTANTBUILD:
+                        response = packet.ReadInt();
+                        if (response == 2)
+                        {
+                            Debug.Log("No gems.");
+                        }
+                        else if (response == 1)
+                        {
+                            Debug.Log("Instant built.");
                             RushSyncRequest();
-                            break;
-                        case 2:
-                            Debug.Log("No resources");
-                            break;
-                        case 3:
-                            Debug.Log("Max level");
-                            break;
-                        case 5:
-                            Debug.Log("No builder");
-                            break;
-                        case 6:
-                            Debug.Log("Max limit reached");
-                            break;
-                    }
-                    break;
-                case RequestsID.INSTANTBUILD:
-                    response = packet.ReadInt();
-                    if (response == 2)
-                    {
-                        Debug.Log("No gems.");
-                    }
-                    else if(response == 1)
-                    {
-                        Debug.Log("Instant built.");
-                        RushSyncRequest();
-                    }
-                    else
-                    {
-                        Debug.Log("Nothing happend.");
-                    }
-                    break;
-                case RequestsID.TRAIN:
-                    response = packet.ReadInt();
-                    if (response == 4)
-                    {
-                        Debug.Log("Server unit not found.");
-                    }
-                    if (response == 3)
-                    {
-                        Debug.Log("No capacity.");
-                    }
-                    if (response == 2)
-                    {
-                        Debug.Log("No resources.");
-                    }
-                    else if (response == 1)
-                    {
-                        Debug.Log("Train started.");
-                        RushSyncRequest();
-                    }
-                    else
-                    {
-                        Debug.Log("Nothing happend.");
-                    }
-                    break;
-                case RequestsID.CANCELTRAIN:
-                    response = packet.ReadInt();
-                    if(response == 1)
-                    {
-                        RushSyncRequest();
-                    }
-                    break;
-                case RequestsID.BATTLEFIND:
-                    long target = packet.ReadLong();
-                    Data.OpponentData opponent = null;
-                    if(target > 0)
-                    {
-                        string d = packet.ReadString();
-                        opponent = Data.Desrialize<Data.OpponentData>(d);
-                    }
-                    UI_Search.instanse.FindResponded(target, opponent);
-                    break;
-                case RequestsID.BATTLESTART:
-                    bool matched = packet.ReadBool();
-                    bool attack = packet.ReadBool();
-                    bool confirmed = matched && attack;
-                    List<Data.BattleStartBuildingData> buildings = null;
-                    int wt = 0;
-                    int lt = 0;
-                    if (confirmed)
-                    {
-                        wt = packet.ReadInt();
-                        lt = packet.ReadInt();
-                        string bsbd = packet.ReadString();
-                        buildings = Data.Desrialize<List<Data.BattleStartBuildingData>>(bsbd);
-                    }
-                    UI_Battle.instanse.StartBattleConfirm(confirmed, buildings, wt, lt);
-                    break;
-                case RequestsID.BATTLEEND:
-                    int stars = packet.ReadInt();
-                    int unitsDeployed = packet.ReadInt();
-                    int lootedGold = packet.ReadInt();
-                    int lootedElixir = packet.ReadInt();
-                    int lootedDark = packet.ReadInt();
-                    int trophies = packet.ReadInt();
-                    int frame = packet.ReadInt();
-                    UI_Battle.instanse.BattleEnded(stars, unitsDeployed, lootedGold, lootedElixir, lootedDark, trophies, frame);
-                    break;
+                        }
+                        else
+                        {
+                            Debug.Log("Nothing happend.");
+                        }
+                        break;
+                    case RequestsID.TRAIN:
+                        response = packet.ReadInt();
+                        if (response == 4)
+                        {
+                            Debug.Log("Server unit not found.");
+                        }
+                        if (response == 3)
+                        {
+                            Debug.Log("No capacity.");
+                        }
+                        if (response == 2)
+                        {
+                            Debug.Log("No resources.");
+                        }
+                        else if (response == 1)
+                        {
+                            Debug.Log("Train started.");
+                            RushSyncRequest();
+                        }
+                        else
+                        {
+                            Debug.Log("Nothing happend.");
+                        }
+                        break;
+                    case RequestsID.CANCELTRAIN:
+                        response = packet.ReadInt();
+                        if (response == 1)
+                        {
+                            RushSyncRequest();
+                        }
+                        break;
+                    case RequestsID.BATTLEFIND:
+                        long target = packet.ReadLong();
+                        Data.OpponentData opponent = null;
+                        if (target > 0)
+                        {
+                            string d = packet.ReadString();
+                            opponent = Data.Desrialize<Data.OpponentData>(d);
+                        }
+                        UI_Search.instanse.FindResponded(target, opponent);
+                        break;
+                    case RequestsID.BATTLESTART:
+                        bool matched = packet.ReadBool();
+                        bool attack = packet.ReadBool();
+                        bool confirmed = matched && attack;
+                        List<Data.BattleStartBuildingData> buildings = null;
+                        int wt = 0;
+                        int lt = 0;
+                        if (confirmed)
+                        {
+                            wt = packet.ReadInt();
+                            lt = packet.ReadInt();
+                            string bsbd = packet.ReadString();
+                            buildings = Data.Desrialize<List<Data.BattleStartBuildingData>>(bsbd);
+                        }
+                        UI_Battle.instanse.StartBattleConfirm(confirmed, buildings, wt, lt);
+                        break;
+                    case RequestsID.BATTLEEND:
+                        int stars = packet.ReadInt();
+                        int unitsDeployed = packet.ReadInt();
+                        int lootedGold = packet.ReadInt();
+                        int lootedElixir = packet.ReadInt();
+                        int lootedDark = packet.ReadInt();
+                        int trophies = packet.ReadInt();
+                        int frame = packet.ReadInt();
+                        UI_Battle.instanse.BattleEnded(stars, unitsDeployed, lootedGold, lootedElixir, lootedDark, trophies, frame);
+                        break;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.Log(ex.Message);
             }
         }
 
@@ -423,35 +436,24 @@ namespace AhmetsHub.ClashOfPirates
             timer = 0;
         }
 
-        private void ConnectionResponse(bool successful)
-        {
-            if (successful)
-            {
-                RealtimeNetworking.OnDisconnectedFromServer += DisconnectedFromServer;
-                string device = SystemInfo.deviceUniqueIdentifier;
-                Packet packet = new Packet();
-                packet.Write((int)RequestsID.AUTH);
-                packet.Write(device);
-                Sender.TCP_Send(packet);
-            }
-            else
-            {
-                // TODO: Connection failed message box with retry button.
-            }
-            RealtimeNetworking.OnConnectingToServerResult -= ConnectionResponse;
-        }
-
-        public void ConnectToServer()
-        {
-            RealtimeNetworking.OnConnectingToServerResult += ConnectionResponse;
-            RealtimeNetworking.Connect();
-        }
-
         private void DisconnectedFromServer()
+        {
+            ThreadDispatcher.instance.Enqueue(() => Desconnected());
+        }
+
+        private void Desconnected()
         {
             connected = false;
             RealtimeNetworking.OnDisconnectedFromServer -= DisconnectedFromServer;
-            // TODO: Connection failed message box with retry button.
+            MessageBox.Open(0, 0.8f, false, MessageResponded, new string[] { "Failed to connect to server. Please check you internet connection and try again." }, new string[] { "Try Again" });
+        }
+
+        private void MessageResponded(int layoutIndex, int buttonIndex)
+        {
+            if (layoutIndex == 0)
+            {
+                SceneManager.LoadScene(0);
+            }
         }
 
     }

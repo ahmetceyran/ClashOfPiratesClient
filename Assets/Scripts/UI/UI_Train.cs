@@ -64,6 +64,7 @@ namespace AhmetsHub.ClashOfPirates
             ClearTrainingItems();
             if (status)
             {
+                Initialize();
                 Sync();
             }
             _elements.SetActive(status);

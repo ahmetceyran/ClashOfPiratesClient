@@ -32,7 +32,56 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum UnitID
         {
-            barbarian, archer, goblin, healer, wallbreaker, giant, miner, balloon, wizard, dragon, pekka
+            barbarian, archer, goblin, healer, wallbreaker, giant, miner, balloon, wizard, dragon, pekka, babydragon, electrodragon, yeti, dragonrider, electrotitan, minion, hogrider, valkyrie, golem, witch, lavahound, bowler, icegolem, headhunter
+        }
+
+        public static bool IsUnitUnlocked(UnitID id, int barracksLevel, int darkBarracksLevel)
+        {
+            switch (id)
+            {
+                case UnitID.barbarian: return barracksLevel >= 1;
+                case UnitID.archer: return barracksLevel >= 2;
+                case UnitID.goblin: return barracksLevel >= 4;
+                case UnitID.healer: return barracksLevel >= 8;
+                case UnitID.wallbreaker: return barracksLevel >= 5;
+                case UnitID.giant: return barracksLevel >= 3;
+                case UnitID.miner: return barracksLevel >= 12;
+                case UnitID.balloon: return barracksLevel >= 6;
+                case UnitID.wizard: return barracksLevel >= 7;
+                case UnitID.dragon: return barracksLevel >= 9;
+                case UnitID.pekka: return barracksLevel >= 10;
+                case UnitID.babydragon: return barracksLevel >= 11;
+                case UnitID.electrodragon: return barracksLevel >= 13;
+                case UnitID.yeti: return barracksLevel >= 14;
+                case UnitID.dragonrider: return barracksLevel >= 15;
+                case UnitID.electrotitan: return barracksLevel >= 16;
+                case UnitID.minion: return darkBarracksLevel >= 1;
+                case UnitID.hogrider: return darkBarracksLevel >= 2;
+                case UnitID.valkyrie: return darkBarracksLevel >= 3;
+                case UnitID.golem: return darkBarracksLevel >= 4;
+                case UnitID.witch: return darkBarracksLevel >= 5;
+                case UnitID.lavahound: return darkBarracksLevel >= 6;
+                case UnitID.bowler: return darkBarracksLevel >= 7;
+                case UnitID.icegolem: return darkBarracksLevel >= 8;
+                case UnitID.headhunter: return darkBarracksLevel >= 9;
+                default: return false;
+            }
+        }
+
+        public static int GetNexLevelRequiredXp(int currentLevel)
+        {
+            if (currentLevel == 1) { return 30; }
+            else if (currentLevel <= 200) { return (currentLevel - 1) * 50; }
+            else if (currentLevel <= 299) { return ((currentLevel - 200) * 500) + 9500; }
+            else { return ((currentLevel - 300) * 1000) + 60000; }
+        }
+
+        public static int GetTotalXpEarned(int currentLevel)
+        {
+            if (currentLevel == 1) { return 0; }
+            else if (currentLevel <= 201) { return ((currentLevel - 1) * (currentLevel - 2) * 25) + 30; }
+            else if (currentLevel <= 299) { return ((currentLevel - 200) * (currentLevel - 200) * 250) + (9250 * (currentLevel - 200)) + 985530; }
+            else { return ((currentLevel - 300) * (currentLevel - 300) * 500) + (59500 * (currentLevel - 300)) + 4410530; }
         }
 
         public enum TargetPriority
@@ -52,7 +101,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum BuildingID
         {
-            townhall, goldmine, goldstorage, elixirmine, elixirstorage, darkelixirmine, darkelixirstorage, buildershut, armycamp, barracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap, clancastle
+            townhall, goldmine, goldstorage, elixirmine, elixirstorage, darkelixirmine, darkelixirstorage, buildershut, armycamp, barracks, darkbarracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap, clancastle
         }
 
         public static int GetStorageGoldAndElixirLoot(int townhallLevel, float storage)

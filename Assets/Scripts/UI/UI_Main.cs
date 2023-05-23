@@ -64,6 +64,10 @@ namespace AhmetsHub.ClashOfPirates
             {
                 OnLeave();
             }
+            else
+            {
+                Player.instanse.RushSyncRequest();
+            }
             _active = status;
             _elements.SetActive(status);
         }

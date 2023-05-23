@@ -16,11 +16,13 @@ namespace AhmetsHub.ClashOfPirates
         public RectTransform upgradePanel = null;
         public RectTransform instantPanel = null;
         public RectTransform trainPanel = null;
+        public RectTransform clanPanel = null;
 
         public Button infoButton = null;
         public Button upgradeButton = null;
         public Button instantButton = null;
         public Button trainButton = null;
+        public Button clanButton = null;
 
         private void Awake()
         {
@@ -36,6 +38,7 @@ namespace AhmetsHub.ClashOfPirates
                 upgradePanel.gameObject.SetActive(Building.selectedInstanse.data.isConstructing == false);
                 instantPanel.gameObject.SetActive(Building.selectedInstanse.data.isConstructing == true);
                 trainPanel.gameObject.SetActive(Building.selectedInstanse.data.id == Data.BuildingID.armycamp || Building.selectedInstanse.data.id == Data.BuildingID.barracks);
+                clanPanel.gameObject.SetActive(Building.selectedInstanse.data.id == Data.BuildingID.clancastle);
             }
             _elements.SetActive(status);
         }

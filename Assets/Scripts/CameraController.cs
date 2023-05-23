@@ -14,6 +14,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Camera _camera = null;
         [SerializeField] private float _moveSpeed = 50;
         [SerializeField] private float _moveSmooth = 5;
+        [SerializeField] private float _mouseZoomSpeed = 10;
 
         [SerializeField] private float _zoomSpeed = 5f;
         [SerializeField] private float _zoomSmooth = 5;
@@ -180,6 +181,11 @@ namespace AhmetsHub.ClashOfPirates
                                 //handled = true;
                                 UI_Train.instanse.SetStatus(true);
                             }
+                            else if (results[i].gameObject == UI_BuildingOptions.instanse.clanButton.gameObject)
+                            {
+                                //handled = true;
+                                UI_Clan.instanse.Open();
+                            }
                         }
                         //if (handled)
                         //{
@@ -293,11 +299,11 @@ namespace AhmetsHub.ClashOfPirates
                 float mouseScroll = _inputs.Main.MouseScroll.ReadValue<float>();
                 if(mouseScroll > 0)
                 {
-                    _zoom -= 3f * Time.deltaTime;
+                    _zoom -= _mouseZoomSpeed * Time.deltaTime;
                 }
                 else if (mouseScroll < 0)
                 {
-                    _zoom += 3f * Time.deltaTime;
+                    _zoom += _mouseZoomSpeed * Time.deltaTime;
                 }
             }
 

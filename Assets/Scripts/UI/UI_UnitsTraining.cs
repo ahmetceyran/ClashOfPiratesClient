@@ -46,7 +46,8 @@ namespace AhmetsHub.ClashOfPirates
             {
                 if (_unit.trainTime <= 0 || _unit.trainedTime >= _unit.trainTime)
                 {
-                    UI_Train.instanse.RemoveTrainingItem(index);
+                    _bar.fillAmount = 1f;
+                    Player.instanse.RushSyncRequest();
                 }
                 else
                 {

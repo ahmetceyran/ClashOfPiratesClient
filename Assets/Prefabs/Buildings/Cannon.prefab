@@ -130,7 +130,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7f7d67fe8ba0c74699631fd4a8a8d09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 11
+  id: 12
   collectButton: {fileID: 0}
   collecting: 0
   buildBar: {fileID: 0}

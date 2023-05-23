@@ -19,13 +19,86 @@ namespace AhmetsHub.ClashOfPirates
         public static readonly float battleFrameRate = 0.1f;
         public static readonly int battleTilesWorthOfOneWall = 15;
         public static readonly int battleGroupWallAttackRadius = 5;
+        public static readonly int clanMaxMembers = 50;
+        public static readonly int clansPerPage = 20;
+        public static readonly int clanNameMinLength = 3;
+        public static readonly int clanCreatePrice = 40000;
+        public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
+
+        public enum ClanJoinType
+        {
+            AnyoneCanJoin = 0, NotAcceptingNewMembers = -1, TakingJoinRequests = 1
+        }
+
+        public class ClansList
+        {
+            public int page = 1;
+            public int pagesCount = 1;
+            public List<Data.Clan> clans = new List<Clan>();
+        }
+
+        public class Clan
+        {
+            public long id = 0;
+            public string name = "Clan";
+            public ClanJoinType joinType = ClanJoinType.AnyoneCanJoin;
+            public int level = 1;
+            public int xp = 0;
+            public int rank = 0;
+            public int trophies = 0;
+            public int minTrophies = 0;
+            public int minTownhallLevel = 0;
+            public int pattern = 0;
+            public int background = 0;
+            public string patternColor = "";
+            public string backgroundColor = "";
+            public List<ClanMember> members = new List<ClanMember>();
+            public ClanWar war = new ClanWar();
+        }
+
+        public class ClanWar
+        {
+            public long id = 0;
+            public long attacker = 0;
+            public long defender = 0;
+            public DateTime start;
+            public List<ClanWarAttack> attacks = new List<ClanWarAttack>();
+        }
+
+        public class ClanWarAttack
+        {
+            public long id = 0;
+            public long attacker = 0;
+            public long defender = 0;
+            public DateTime start;
+            public int stars = 0;
+        }
+
+        public class ClanMember
+        {
+            public long id = 0;
+            public string name = "Player";
+            public int level = 1;
+            public int xp = 0;
+            public int rank = 0;
+            public int trophies = 0;
+            public int townHallLevel = 1;
+            public bool online = false;
+        }
 
         public class Player
         {
+            public string name = "Player";
             public int gems = 0;
             public int trophies = 0;
             public DateTime nowTime;
             public DateTime shield;
+            public int xp = 0;
+            public int level = 1;
+            public DateTime clanTimer;
+            public long clanID = 0;
+            public int clanRank = 0;
+            public long warID = 0;
             public List<Building> buildings = new List<Building>();
             public List<Unit> units = new List<Unit>();
         }

@@ -16,7 +16,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20
         }
 
         private void Start()
@@ -289,6 +289,43 @@ namespace AhmetsHub.ClashOfPirates
                         int trophies = packet.ReadInt();
                         int frame = packet.ReadInt();
                         UI_Battle.instanse.BattleEnded(stars, unitsDeployed, lootedGold, lootedElixir, lootedDark, trophies, frame);
+                        break;
+                    case RequestsID.OPENCLAN:
+                        bool haveClan = packet.ReadBool();
+                        Data.Clan clan = null;
+                        List<Data.ClanMember> warMembers = null;
+                        if (haveClan)
+                        {
+                            string clanData = packet.ReadString();
+                            clan = Data.Desrialize<Data.Clan>(clanData);
+                            if (clan.war.id > 0)
+                            {
+                                string warData = packet.ReadString();
+                                warMembers = Data.Desrialize<List<Data.ClanMember>>(warData);
+                            }
+                        }
+                        UI_Clan.instanse.ClanOpen(clan, warMembers);
+                        break;
+                    case RequestsID.GETCLANS:
+                        string clansData = packet.ReadString();
+                        Data.ClansList clans = Data.Desrialize<Data.ClansList>(clansData);
+                        UI_Clan.instanse.ClansListOpen(clans);
+                        break;
+                    case RequestsID.CREATECLAN:
+                        response = packet.ReadInt();
+                        UI_Clan.instanse.CreateResponse(response);
+                        break;
+                    case RequestsID.JOINCLAN:
+                        response = packet.ReadInt();
+                        UI_Clan.instanse.JoinResponse(response);
+                        break;
+                    case RequestsID.LEAVECLAN:
+                        response = packet.ReadInt();
+                        UI_Clan.instanse.LeaveResponse(response);
+                        break;
+                    case RequestsID.EDITCLAN:
+                        response = packet.ReadInt();
+                        UI_Clan.instanse.EditResponse(response);
                         break;
                 }
             }

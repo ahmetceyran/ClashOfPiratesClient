@@ -14,6 +14,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private GameObject _profilePanel = null;
         [SerializeField] private GameObject _listPanel = null;
         [SerializeField] private GameObject _createPanel = null;
+        [SerializeField] private GameObject _warPanel = null;
         [SerializeField] private Button _closeButton = null;
 
         [Header("Clans List")]
@@ -49,9 +50,49 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _profileLeave = null;
         [SerializeField] private Button _profileClans = null;
         [SerializeField] private Button _profileEdit = null;
+        [SerializeField] private Button _profileWar = null;
         [SerializeField] private TextMeshProUGUI _profileName = null;
         [SerializeField] private Image _profileBackground = null;
         [SerializeField] private Image _profileIcon = null;
+
+        [Header("Clan War Start")]
+        [SerializeField] private GameObject _warNormalPanel = null;
+        [SerializeField] private Button _warStart = null;
+        [SerializeField] private Button _warNormalBack = null;
+
+        [Header("Clan War Members")]
+        [SerializeField] private GameObject _warMembersPanel = null;
+        [SerializeField] private Button _warConfirm = null;
+        [SerializeField] private TextMeshProUGUI _warMembersCount = null;
+        [SerializeField] private Button _warMembersBack = null;
+        [SerializeField] private UI_WarMemberSelect _warMemberSelectPrefab = null;
+        [SerializeField] private RectTransform _warMemberSelectParent = null;
+
+        [Header("Clan War Search")]
+        [SerializeField] private GameObject _warSearchPanel = null;
+        [SerializeField] private Button _warCancel = null;
+        [SerializeField] private Button _warSearchBack = null;
+        [SerializeField] private TextMeshProUGUI _warSearchStarter = null;
+        [SerializeField] private TextMeshProUGUI _warSearchCount = null;
+
+        [Header("Clan War Map")]
+        [SerializeField] private TextMeshProUGUI _warClan1Name = null;
+        [SerializeField] private TextMeshProUGUI _warClan2Name = null;
+        [SerializeField] private Image _warClan1Background = null;
+        [SerializeField] private Image _warClan1Icon = null;
+        [SerializeField] private Image _warClan2Background = null;
+        [SerializeField] private Image _warClan2Icon = null;
+        [SerializeField] private Button _warMapBack = null;
+        [SerializeField] private Button _warMapEnemy = null;
+        [SerializeField] private Button _warMapHome = null;
+        [SerializeField] private GameObject _warMapPanel = null;
+        [SerializeField] private RectTransform _warMap1 = null;
+        [SerializeField] private RectTransform _warMap2 = null;
+        [SerializeField] private RectTransform _warMap1Content = null;
+        [SerializeField] private RectTransform _warMap2Content = null;
+        [SerializeField] private UI_WarMember _warMemberPrefab = null;
+        [SerializeField] private RectTransform[] _warMemberMap1Parents = null;
+        [SerializeField] private RectTransform[] _warMemberMap2Parents = null;
 
         [Header("Other")]
         public Sprite[] patterns = null;
@@ -64,6 +105,10 @@ namespace AhmetsHub.ClashOfPirates
 
         private Data.Clan profileClan = null;
         private Data.Clan clanToSave = null;
+
+        private List<UI_WarMember> warMembers = new List<UI_WarMember>();
+        private List<UI_WarMemberSelect> warMembersSelect = new List<UI_WarMemberSelect>();
+        private List<long> membersInWar = new List<long>();
 
         private void Awake()
         {
@@ -89,6 +134,16 @@ namespace AhmetsHub.ClashOfPirates
             _profileLeave.onClick.AddListener(Leave);
             _profileClans.onClick.AddListener(Clans);
             _profileEdit.onClick.AddListener(Edit);
+            _warMapEnemy.onClick.AddListener(WarEnemy);
+            _warMapHome.onClick.AddListener(WarHome);
+            _warNormalBack.onClick.AddListener(WarNormalBack);
+            _warSearchBack.onClick.AddListener(WarSearchBack);
+            _warMapBack.onClick.AddListener(WarMapBack);
+            _profileWar.onClick.AddListener(WarOpen);
+            _warStart.onClick.AddListener(WarSearchStart);
+            _warCancel.onClick.AddListener(WarSearchCancel);
+            _warMembersBack.onClick.AddListener(WarMembersBack);
+            _warConfirm.onClick.AddListener(WarConfirm);
         }
 
         public void Open()
@@ -97,6 +152,7 @@ namespace AhmetsHub.ClashOfPirates
             _profilePanel.SetActive(false);
             _listPanel.SetActive(false);
             _createPanel.SetActive(false);
+            _warPanel.SetActive(false);
             Packet packet = new Packet();
             if (Player.instanse.data.clanID > 0)
             {
@@ -117,7 +173,9 @@ namespace AhmetsHub.ClashOfPirates
 
         public void Close()
         {
+            ClearWarMembersSelect();
             ClearClanItems();
+            ClearWarMembers();
             _active = false;
             _elements.SetActive(false);
         }
@@ -151,6 +209,7 @@ namespace AhmetsHub.ClashOfPirates
             _profileJoin.gameObject.SetActive(Player.instanse.data.clanID <= 0 && Player.instanse.data.clanID != clan.id);
             _profileLeave.gameObject.SetActive(Player.instanse.data.clanID > 0 && Player.instanse.data.clanID == clan.id);
             _profileEdit.gameObject.SetActive(Player.instanse.data.clanID > 0 && Player.instanse.data.clanID == clan.id);
+            _profileWar.gameObject.SetActive(Player.instanse.data.clanID > 0 && Player.instanse.data.clanID == clan.id);
             _profileJoin.interactable = (clan.members.Count < Data.clanMaxMembers);
             _profileName.text = profileClan.name;
             _profileIcon.sprite = patterns[profileClan.pattern];
@@ -158,7 +217,256 @@ namespace AhmetsHub.ClashOfPirates
             _profileIcon.color = Tools.HexToColor(profileClan.patternColor);
             _listPanel.SetActive(false);
             _createPanel.SetActive(false);
+            _warPanel.SetActive(false);
             _profilePanel.SetActive(true);
+        }
+
+        public void WarStarted(long id)
+        {
+            if (_active)
+            {
+                Player.instanse.RushSyncRequest();
+                WarOpen();
+            }
+            MessageBox.Open(1, 0.8f, true, ErrorConfirm, new string[] { "Clan war started." }, new string[] { "OK" });
+        }
+
+        private void WarOpen()
+        {
+            Packet packet = new Packet();
+            packet.Write((int)Player.RequestsID.OPENWAR);
+            Sender.TCP_Send(packet);
+        }
+
+        public void WarOpen(Data.ClanWarData data)
+        {
+            ClearWarMembers();
+
+            _warMapEnemy.gameObject.SetActive(true);
+            _warMapHome.gameObject.SetActive(false);
+
+            _listPanel.SetActive(false);
+            _createPanel.SetActive(false);
+            _profilePanel.SetActive(false);
+
+            _warMembersPanel.SetActive(false);
+            _warNormalPanel.SetActive(false);
+            _warSearchPanel.SetActive(false);
+            _warMapPanel.SetActive(false);
+
+            if (data.id > 0)
+            {
+                for (int i = 0; i < data.clan1.members.Count; i++)
+                {
+                    if (data.clan1.members[i].warID == data.id)
+                    {
+                        if (data.clan1.members[i].warPos >= 0 && data.clan1.members[i].warPos < _warMemberMap1Parents.Length && _warMemberMap1Parents[data.clan1.members[i].warPos] != null)
+                        {
+                            UI_WarMember member = Instantiate(_warMemberPrefab, _warMemberMap1Parents[data.clan1.members[i].warPos]);
+                            member.Initialize(data.clan1.members[i]);
+                            warMembers.Add(member);
+                        }
+                        else
+                        {
+                            Debug.LogError("There is somthing wrong with positions.");
+                        }
+                    }
+                }
+                for (int i = 0; i < data.clan2.members.Count; i++)
+                {
+                    if (data.clan2.members[i].warID == data.id)
+                    {
+                        if (data.clan2.members[i].warPos >= 0 && data.clan2.members[i].warPos < _warMemberMap2Parents.Length && _warMemberMap2Parents[data.clan2.members[i].warPos] != null)
+                        {
+                            UI_WarMember member = Instantiate(_warMemberPrefab, _warMemberMap2Parents[data.clan2.members[i].warPos]);
+                            member.Initialize(data.clan2.members[i]);
+                            warMembers.Add(member);
+                        }
+                        else
+                        {
+                            Debug.LogError("There is somthing wrong with positions.");
+                        }
+                    }
+                }
+
+                _warClan1Name.text = data.clan1.name;
+                _warClan1Background.color = Tools.HexToColor(data.clan1.backgroundColor);
+                _warClan1Icon.color = Tools.HexToColor(data.clan1.patternColor);
+
+                _warClan2Name.text = data.clan2.name;
+                _warClan2Background.color = Tools.HexToColor(data.clan2.backgroundColor);
+                _warClan2Icon.color = Tools.HexToColor(data.clan2.patternColor);
+
+                _warMapPanel.SetActive(true);
+            }
+            else
+            {
+                if (data.searching)
+                {
+                    _warSearchStarter.text = "Search started by " + data.starter;
+                    _warSearchCount.text = data.count.ToString() + " VS " + data.count.ToString();
+                    _warSearchPanel.SetActive(true);
+                }
+                else
+                {
+                    bool found = false;
+                    for (int i = 0; i < Data.clanRanksWithWarPermission.Length; i++)
+                    {
+                        if (Data.clanRanksWithWarPermission[i] == Player.instanse.data.clanRank)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    _warStart.gameObject.SetActive(found);
+                    _warNormalPanel.SetActive(true);
+                }
+            }
+
+            _warMap1.anchoredPosition = Vector2.zero;
+            _warMap2.anchoredPosition = new Vector2(Screen.width, 0);
+            _warMap1Content.anchoredPosition = Vector2.zero;
+
+            _warPanel.SetActive(true);
+        }
+
+        private void WarEnemy()
+        {
+            _warMapEnemy.gameObject.SetActive(false);
+            StartCoroutine(WarEnemy(1f));
+        }
+
+        private IEnumerator WarEnemy(float time)
+        {
+            Vector2 position = _warMap1.anchoredPosition;
+            Vector2 taeget = new Vector2(-Screen.width, position.y);
+            _warMap2.anchoredPosition = new Vector2(_warMap2.anchoredPosition.x, position.y);
+            float timer = 0;
+            while (_warMap1.anchoredPosition != taeget)
+            {
+                _warMap2Content.anchoredPosition = _warMap1Content.anchoredPosition;
+                timer += Time.deltaTime; if (timer > time) { timer = time; }
+                _warMap1.anchoredPosition = Vector2.Lerp(position, taeget, timer / time);
+                _warMap2.anchoredPosition = new Vector2(Screen.width + _warMap1.anchoredPosition.x, position.y);
+                yield return null;
+            }
+            _warMapHome.gameObject.SetActive(true);
+        }
+
+        private void WarHome()
+        {
+            _warMapHome.gameObject.SetActive(false);
+            StartCoroutine(WarHome(1f));
+        }
+
+        private IEnumerator WarHome(float time)
+        {
+            Vector2 position = _warMap2.anchoredPosition;
+            Vector2 taeget = new Vector2(Screen.width, position.y);
+            _warMap1.anchoredPosition = new Vector2(_warMap1.anchoredPosition.x, position.y);
+            float timer = 0;
+            while (_warMap2.anchoredPosition != taeget)
+            {
+                _warMap1Content.anchoredPosition = _warMap2Content.anchoredPosition;
+                timer += Time.deltaTime; if (timer > time) { timer = time; }
+                _warMap2.anchoredPosition = Vector2.Lerp(position, taeget, timer / time);
+                _warMap1.anchoredPosition = new Vector2(_warMap2.anchoredPosition.x - Screen.width, position.y);
+                yield return null;
+            }
+            _warMapEnemy.gameObject.SetActive(true);
+        }
+
+        private void WarSearchStart()
+        {
+            membersInWar.Clear();
+            ClearWarMembersSelect();
+            _warMembersCount.text = "0 VS 0";
+
+            _warNormalPanel.SetActive(false);
+            _warSearchPanel.SetActive(false);
+            _warMapPanel.SetActive(false);
+            for (int i = 0; i < profileClan.members.Count; i++)
+            {
+                UI_WarMemberSelect member = Instantiate(_warMemberSelectPrefab, _warMemberSelectParent);
+                member.Initialize(profileClan.members[i]);
+                warMembersSelect.Add(member);
+            }
+
+            _warConfirm.interactable = false;
+            _warMembersPanel.SetActive(true);
+        }
+
+        public void WarMemberStatus(long id, bool isIn)
+        {
+            if (isIn && !membersInWar.Contains(id))
+            {
+                membersInWar.Add(id);
+            }
+            else if (!isIn && membersInWar.Contains(id))
+            {
+                membersInWar.Remove(id);
+            }
+            bool found = false;
+            for (int i = 0; i < Data.clanWarAvailableCounts.Length; i++)
+            {
+                if (Data.clanWarAvailableCounts[i] == membersInWar.Count)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            _warConfirm.interactable = found;
+            _warMembersCount.text = membersInWar.Count + " VS " + membersInWar.Count;
+        }
+
+        private void WarConfirm()
+        {
+            _warConfirm.interactable = false;
+            Packet packet = new Packet();
+            packet.Write((int)Player.RequestsID.STARTWAR);
+            string membersDara = Data.Serialize<List<long>>(membersInWar);
+            packet.Write(membersDara);
+            Sender.TCP_Send(packet);
+        }
+
+        public void WarStartResponse(int response)
+        {
+            Player.instanse.RushSyncRequest();
+            WarOpen();
+        }
+
+        private void WarSearchCancel()
+        {
+            Packet packet = new Packet();
+            packet.Write((int)Player.RequestsID.CANCELWAR);
+            Sender.TCP_Send(packet);
+        }
+
+        public void WarSearchCancelResponse(int response)
+        {
+            Player.instanse.RushSyncRequest();
+            WarOpen();
+        }
+
+        private void WarMapBack()
+        {
+            Open();
+        }
+
+        private void WarNormalBack()
+        {
+            Open();
+        }
+
+        private void WarSearchBack()
+        {
+            Open();
+        }
+
+        private void WarMembersBack()
+        {
+            _warMembersPanel.SetActive(false);
+            _warNormalPanel.SetActive(true);
         }
 
         private void Join()
@@ -229,6 +537,7 @@ namespace AhmetsHub.ClashOfPirates
             UpdateCreateJoinType();
             _createPanel.SetActive(true);
             _listPanel.SetActive(false);
+            _warPanel.SetActive(false);
             _profilePanel.SetActive(false);
         }
 
@@ -282,6 +591,11 @@ namespace AhmetsHub.ClashOfPirates
         {
             switch (response)
             {
+                case 1:
+                    Player.instanse.RushSyncRequest();
+                    Close();
+                    // Todo: Toast -> Clan created successfully
+                    break;
                 case 2:
                     MessageBox.Open(1, 0.8f, true, ErrorConfirm, new string[] { "You already are in a clan." }, new string[] { "OK" });
                     break;
@@ -345,7 +659,7 @@ namespace AhmetsHub.ClashOfPirates
                     break;
             }
         }
-        
+
         public void LeaveResponse(int response)
         {
             switch (response)
@@ -378,7 +692,7 @@ namespace AhmetsHub.ClashOfPirates
         private void CreateJoinNext()
         {
             int i = (int)clanToSave.joinType + 1;
-            if(i > 1) { i = -1; }
+            if (i > 1) { i = -1; }
             if (i < -1) { i = 1; }
             clanToSave.joinType = (Data.ClanJoinType)i;
             UpdateCreateJoinType();
@@ -451,6 +765,30 @@ namespace AhmetsHub.ClashOfPirates
                 }
             }
             clanItems.Clear();
+        }
+
+        private void ClearWarMembers()
+        {
+            for (int i = 0; i < warMembers.Count; i++)
+            {
+                if (warMembers[i])
+                {
+                    Destroy(warMembers[i].gameObject);
+                }
+            }
+            warMembers.Clear();
+        }
+
+        private void ClearWarMembersSelect()
+        {
+            for (int i = 0; i < warMembersSelect.Count; i++)
+            {
+                if (warMembersSelect[i])
+                {
+                    Destroy(warMembersSelect[i].gameObject);
+                }
+            }
+            warMembersSelect.Clear();
         }
 
     }

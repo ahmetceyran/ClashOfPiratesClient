@@ -84,5 +84,69 @@ namespace AhmetsHub.ClashOfPirates
             return null;
         }
 
+        public void DataSynced()
+        {
+            if (Player.instanse.data.buildings != null && Player.instanse.data.buildings.Count > 0)
+            {
+                for (int i = 0; i < Player.instanse.data.buildings.Count; i++)
+                {
+                    Building building = _grid.GetBuilding(Player.instanse.data.buildings[i].databaseID);
+                    if (building != null)
+                    {
+
+                    }
+                    else
+                    {
+                        Building prefab = GetBuildingPrefab(Player.instanse.data.buildings[i].id);
+                        if (prefab)
+                        {
+                            building = Instantiate(prefab, Vector3.zero, Quaternion.identity);
+                            building.databaseID = Player.instanse.data.buildings[i].databaseID;
+                            building.PlacedOnGrid(Player.instanse.data.buildings[i].x, Player.instanse.data.buildings[i].y);
+                            building._baseArea.gameObject.SetActive(false);
+
+                            _grid.buildings.Add(building);
+                        }
+                    }
+
+                    if (building.buildBar == null)
+                    {
+                        building.buildBar = Instantiate(barBuild, buttonsParent);
+                        building.buildBar.gameObject.SetActive(false);
+                    }
+
+                    building.data = Player.instanse.data.buildings[i];
+                    switch (building.id)
+                    {
+                        case Data.BuildingID.goldmine:
+                            if (building.collectButton == null)
+                            {
+                                building.collectButton = Instantiate(buttonCollectGold, buttonsParent);
+                                building.collectButton.button.onClick.AddListener(building.Collect);
+                                building.collectButton.gameObject.SetActive(false);
+                            }
+                            break;
+                        case Data.BuildingID.elixirmine:
+                            if (building.collectButton == null)
+                            {
+                                building.collectButton = Instantiate(buttonCollectElixir, buttonsParent);
+                                building.collectButton.button.onClick.AddListener(building.Collect);
+                                building.collectButton.gameObject.SetActive(false);
+                            }
+                            break;
+                        case Data.BuildingID.darkelixirmine:
+                            if (building.collectButton == null)
+                            {
+                                building.collectButton = Instantiate(buttonCollectDarkElixir, buttonsParent);
+                                building.collectButton.button.onClick.AddListener(building.Collect);
+                                building.collectButton.gameObject.SetActive(false);
+                            }
+                            break;
+                    }
+                    building.AdjustUI();
+                }
+            }
+        }
+
     }
 }

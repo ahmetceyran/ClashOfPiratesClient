@@ -76,6 +76,11 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private TextMeshProUGUI _warSearchCount = null;
 
         [Header("Clan War Map")]
+        [SerializeField] private GameObject _warMapPanel = null;
+        [SerializeField] private GameObject _warMapSelectPanel = null;
+        [SerializeField] private TextMeshProUGUI _warSelectedName = null;
+        [SerializeField] private Button _warSelectedAttack = null;
+        [SerializeField] private Button _warEditLayout = null;
         [SerializeField] private TextMeshProUGUI _warClan1Name = null;
         [SerializeField] private TextMeshProUGUI _warClan2Name = null;
         [SerializeField] private Image _warClan1Background = null;
@@ -85,7 +90,6 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _warMapBack = null;
         [SerializeField] private Button _warMapEnemy = null;
         [SerializeField] private Button _warMapHome = null;
-        [SerializeField] private GameObject _warMapPanel = null;
         [SerializeField] private RectTransform _warMap1 = null;
         [SerializeField] private RectTransform _warMap2 = null;
         [SerializeField] private RectTransform _warMap1Content = null;
@@ -109,6 +113,9 @@ namespace AhmetsHub.ClashOfPirates
         private List<UI_WarMember> warMembers = new List<UI_WarMember>();
         private List<UI_WarMemberSelect> warMembersSelect = new List<UI_WarMemberSelect>();
         private List<long> membersInWar = new List<long>();
+
+        private int warMemberIconSize = 100;
+        [HideInInspector] public UI_WarMember selectedWarMember = null;
 
         private void Awake()
         {
@@ -144,6 +151,8 @@ namespace AhmetsHub.ClashOfPirates
             _warCancel.onClick.AddListener(WarSearchCancel);
             _warMembersBack.onClick.AddListener(WarMembersBack);
             _warConfirm.onClick.AddListener(WarConfirm);
+            _warEditLayout.onClick.AddListener(EditLayout);
+            _warSelectedAttack.onClick.AddListener(Attack);
         }
 
         public void Open()
@@ -178,6 +187,40 @@ namespace AhmetsHub.ClashOfPirates
             ClearWarMembers();
             _active = false;
             _elements.SetActive(false);
+        }
+
+        public void SelectWarMember(UI_WarMember item)
+        {
+            if (selectedWarMember != null)
+            {
+                if (selectedWarMember == item)
+                {
+                    selectedWarMember.selectedEffects.SetActive(false);
+                    _warMapSelectPanel.gameObject.SetActive(false);
+                    selectedWarMember = null;
+                    return;
+                }
+                else
+                {
+                    selectedWarMember.selectedEffects.SetActive(false);
+                }
+            }
+            selectedWarMember = item;
+            _warSelectedName.text = selectedWarMember._data.name;
+            _warSelectedAttack.gameObject.SetActive(selectedWarMember._data.clanID != Player.instanse.data.clanID);
+            selectedWarMember.selectedEffects.SetActive(true);
+            _warMapSelectPanel.gameObject.SetActive(true);
+        }
+
+        private void Attack()
+        {
+            Debug.Log("TODO: Start the attack");
+        }
+
+        private void EditLayout()
+        {
+            UI_WarLayout.instanse.SetStatus(true);
+            Close();
         }
 
         public void ClansListOpen(Data.ClansList clans)
@@ -241,6 +284,8 @@ namespace AhmetsHub.ClashOfPirates
         public void WarOpen(Data.ClanWarData data)
         {
             ClearWarMembers();
+            selectedWarMember = null;
+            _warMapSelectPanel.gameObject.SetActive(false);
 
             _warMapEnemy.gameObject.SetActive(true);
             _warMapHome.gameObject.SetActive(false);
@@ -264,6 +309,8 @@ namespace AhmetsHub.ClashOfPirates
                         {
                             UI_WarMember member = Instantiate(_warMemberPrefab, _warMemberMap1Parents[data.clan1.members[i].warPos]);
                             member.Initialize(data.clan1.members[i]);
+                            RectTransform rect = member.GetComponent<RectTransform>();
+                            rect.sizeDelta = new Vector2(warMemberIconSize, warMemberIconSize);
                             warMembers.Add(member);
                         }
                         else
@@ -280,6 +327,8 @@ namespace AhmetsHub.ClashOfPirates
                         {
                             UI_WarMember member = Instantiate(_warMemberPrefab, _warMemberMap2Parents[data.clan2.members[i].warPos]);
                             member.Initialize(data.clan2.members[i]);
+                            RectTransform rect = member.GetComponent<RectTransform>();
+                            rect.sizeDelta = new Vector2(warMemberIconSize, warMemberIconSize);
                             warMembers.Add(member);
                         }
                         else

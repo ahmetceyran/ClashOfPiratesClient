@@ -373,11 +373,6 @@ namespace AhmetsHub.ClashOfPirates
         {
             data = player;
 
-            if (_inBattle)
-            {
-                return;
-            }
-
             gold = 0;
             maxGold = 0;
 
@@ -389,84 +384,33 @@ namespace AhmetsHub.ClashOfPirates
 
             int gems = player.gems;
 
-            if(player.buildings != null && player.buildings.Count > 0)
+            if (player.buildings != null && player.buildings.Count > 0)
             {
                 for (int i = 0; i < player.buildings.Count; i++)
                 {
-                    Building building = UI_Main.instanse._grid.GetBuilding(player.buildings[i].databaseID);
-                    if(building != null)
-                    {
-
-                    }
-                    else
-                    {
-                        Building prefab = UI_Main.instanse.GetBuildingPrefab(player.buildings[i].id);
-                        if (prefab)
-                        {
-                            building = Instantiate(prefab, Vector3.zero, Quaternion.identity);
-                            building.databaseID = player.buildings[i].databaseID;
-                            building.PlacedOnGrid(player.buildings[i].x, player.buildings[i].y);
-                            building._baseArea.gameObject.SetActive(false);
-
-                            UI_Main.instanse._grid.buildings.Add(building);
-                        }
-                    }
-                    
-                    if (building.buildBar == null)
-                    {
-                        building.buildBar = Instantiate(UI_Main.instanse.barBuild, UI_Main.instanse.buttonsParent);
-                        building.buildBar.gameObject.SetActive(false);
-                    }
-
-                    building.data = player.buildings[i];
-                    switch (building.id)
+                    switch (player.buildings[i].id)
                     {
                         case Data.BuildingID.townhall:
-                            maxGold += building.data.goldCapacity;
-                            gold += building.data.goldStorage;
-                            maxElixir += building.data.elixirCapacity;
-                            elixir += building.data.elixirStorage;
-                            maxDarkElixir += building.data.darkCapacity;
-                            darkElixir += building.data.darkStorage;
-                            break;
-                        case Data.BuildingID.goldmine:
-                            if (building.collectButton == null)
-                            {
-                                building.collectButton = Instantiate(UI_Main.instanse.buttonCollectGold, UI_Main.instanse.buttonsParent);
-                                building.collectButton.button.onClick.AddListener(building.Collect);
-                                building.collectButton.gameObject.SetActive(false);
-                            }
+                            maxGold += player.buildings[i].goldCapacity;
+                            gold += player.buildings[i].goldStorage;
+                            maxElixir += player.buildings[i].elixirCapacity;
+                            elixir += player.buildings[i].elixirStorage;
+                            maxDarkElixir += player.buildings[i].darkCapacity;
+                            darkElixir += player.buildings[i].darkStorage;
                             break;
                         case Data.BuildingID.goldstorage:
-                            maxGold += building.data.goldCapacity;
-                            gold += building.data.goldStorage;
-                            break;
-                        case Data.BuildingID.elixirmine:
-                            if (building.collectButton == null)
-                            {
-                                building.collectButton = Instantiate(UI_Main.instanse.buttonCollectElixir, UI_Main.instanse.buttonsParent);
-                                building.collectButton.button.onClick.AddListener(building.Collect);
-                                building.collectButton.gameObject.SetActive(false);
-                            }
+                            maxGold += player.buildings[i].goldCapacity;
+                            gold += player.buildings[i].goldStorage;
                             break;
                         case Data.BuildingID.elixirstorage:
-                            maxElixir += building.data.elixirCapacity;
-                            elixir += building.data.elixirStorage;
-                            break;
-                        case Data.BuildingID.darkelixirmine:
-                            if (building.collectButton == null)
-                            {
-                                building.collectButton = Instantiate(UI_Main.instanse.buttonCollectDarkElixir, UI_Main.instanse.buttonsParent);
-                                building.collectButton.button.onClick.AddListener(building.Collect);
-                                building.collectButton.gameObject.SetActive(false);
-                            }
+                            maxElixir += player.buildings[i].elixirCapacity;
+                            elixir += player.buildings[i].elixirStorage;
                             break;
                         case Data.BuildingID.darkelixirstorage:
-                            maxDarkElixir += building.data.darkCapacity;
-                            darkElixir += building.data.darkStorage;
+                            maxDarkElixir += player.buildings[i].darkCapacity;
+                            darkElixir += player.buildings[i].darkStorage;
                             break;
                     }
-                    building.AdjustUI();
                 }
             }
 
@@ -479,7 +423,15 @@ namespace AhmetsHub.ClashOfPirates
             UI_Main.instanse._elixirText.text = elixir + "/" + maxElixir;
             UI_Main.instanse._gemsText.text = gems.ToString();
 
-            if (UI_Train.instanse.isOpen)
+            if (UI_Main.instanse.isActive && !UI_WarLayout.instanse.isActive)
+            {
+                UI_Main.instanse.DataSynced();
+            }
+            else if (UI_WarLayout.instanse.isActive)
+            {
+                UI_WarLayout.instanse.DataSynced();
+            }
+            else if (UI_Train.instanse.isOpen)
             {
                 UI_Train.instanse.Sync();
             }

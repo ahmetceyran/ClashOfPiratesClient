@@ -34,11 +34,11 @@ namespace AhmetsHub.ClashOfPirates
         {
             if(status && Building.selectedInstanse != null)
             {
-                infoPanel.gameObject.SetActive(true);
-                upgradePanel.gameObject.SetActive(Building.selectedInstanse.data.isConstructing == false);
-                instantPanel.gameObject.SetActive(Building.selectedInstanse.data.isConstructing == true);
-                trainPanel.gameObject.SetActive(Building.selectedInstanse.data.id == Data.BuildingID.armycamp || Building.selectedInstanse.data.id == Data.BuildingID.barracks);
-                clanPanel.gameObject.SetActive(Building.selectedInstanse.data.id == Data.BuildingID.clancastle);
+                infoPanel.gameObject.SetActive(UI_Main.instanse.isActive);
+                upgradePanel.gameObject.SetActive(Building.selectedInstanse.data.isConstructing == false && UI_Main.instanse.isActive);
+                instantPanel.gameObject.SetActive(Building.selectedInstanse.data.isConstructing == true && UI_Main.instanse.isActive);
+                trainPanel.gameObject.SetActive((Building.selectedInstanse.data.id == Data.BuildingID.armycamp || Building.selectedInstanse.data.id == Data.BuildingID.barracks) && UI_Main.instanse.isActive);
+                clanPanel.gameObject.SetActive(Building.selectedInstanse.data.id == Data.BuildingID.clancastle && UI_Main.instanse.isActive);
             }
             _elements.SetActive(status);
         }

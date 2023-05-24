@@ -207,6 +207,37 @@ namespace AhmetsHub.ClashOfPirates
                     }
                 }
             }
+            else if (UI_WarLayout.instanse.isActive)
+            {
+                if (results.Count <= 0)
+                {
+                    bool found = false;
+                    Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
+                    for (int i = 0; i < UI_Main.instanse._grid.buildings.Count; i++)
+                    {
+                        if (UI_Main.instanse._grid.IsWorldPositionIsOnPlane(planePosition, UI_Main.instanse._grid.buildings[i].currentX, UI_Main.instanse._grid.buildings[i].currentY, UI_Main.instanse._grid.buildings[i].rows, UI_Main.instanse._grid.buildings[i].columns))
+                        {
+                            found = true;
+                            UI_Main.instanse._grid.buildings[i].Selected();
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        if (Building.selectedInstanse != null)
+                        {
+                            Building.selectedInstanse.Deselected();
+                        }
+                    }
+                }
+                else
+                {
+                    if (Building.selectedInstanse != null)
+                    {
+                        Building.selectedInstanse.Deselected();
+                    }
+                }
+            }
         }
 
         public bool IsScreenPointOverUI(Vector2 position)
@@ -220,7 +251,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void MoveStarted()
         {
-            if (UI_Main.instanse.isActive || UI_Battle.instanse.isActive)
+            if (UI_Main.instanse.isActive || UI_Battle.instanse.isActive || UI_WarLayout.instanse.isActive)
             {
                 if (_building)
                 {
@@ -269,7 +300,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void ZoomStarted()
         {
-            if (UI_Main.instanse.isActive || UI_Battle.instanse.isActive)
+            if (UI_Main.instanse.isActive || UI_Battle.instanse.isActive || UI_WarLayout.instanse.isActive)
             {
                 Vector2 touch0 = _inputs.Main.TouchPosition0.ReadValue<Vector2>();
                 Vector2 touch1 = _inputs.Main.TouchPosition1.ReadValue<Vector2>();

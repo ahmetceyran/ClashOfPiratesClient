@@ -19,11 +19,24 @@ namespace AhmetsHub.ClashOfPirates
         public static readonly float battleFrameRate = 0.1f;
         public static readonly int battleTilesWorthOfOneWall = 15;
         public static readonly int battleGroupWallAttackRadius = 5;
+
         public static readonly int clanMaxMembers = 50;
         public static readonly int clansPerPage = 20;
         public static readonly int clanNameMinLength = 3;
         public static readonly int clanCreatePrice = 40000;
+
+        public static readonly double clanWarMatchMinPercentage = 0.70d;
+
+        public static readonly double clanWarMatchTownHallEffectPercentage = 0.60d;
+        public static readonly double clanWarMatchSpellFactoryEffectPercentage = 0.5d;
+        public static readonly double clanWarMatchDarkSpellFactoryEffectPercentage = 0.5d;
+        public static readonly double clanWarMatchBarracksEffectPercentage = 0.5d;
+        public static readonly double clanWarMatchDarkBarracksEffectPercentage = 0.5d;
+        public static readonly double clanWarMatchCampsEffectPercentage = 0.20d;
+
         public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
+        public static readonly int[] clanRanksWithWarPermission = { 1, 2 };
+        public static readonly int[] clanWarAvailableCounts = { 1, 5, 10, 15, 20, 30, 40, 50 };
 
         public enum ClanJoinType
         {
@@ -35,6 +48,58 @@ namespace AhmetsHub.ClashOfPirates
             public int page = 1;
             public int pagesCount = 1;
             public List<Data.Clan> clans = new List<Clan>();
+        }
+
+        public class ClanWarSearch
+        {
+            public long id = 0;
+            public long clan = 0;
+            public long player = 0;
+            public DateTime time;
+            public List<ClanWarSearchMember> members = null;
+            public List<long> notMatch = new List<long>();
+            public int match = -1;
+            public bool handled = false;
+        }
+
+        public class ClanWarData
+        {
+            public long id = 0;
+            public bool searching = false;
+            public int count = 0;
+            public string starter = "";
+            public Clan clan1 = null;
+            public Clan clan2 = null;
+        }
+
+        public class ClanWarAttack
+        {
+            public long id = 0;
+            public DateTime start;
+            public long attacker = 0;
+            public long defender = 0;
+            public int stars = 0;
+            public int gold = 0;
+            public int elixir = 0;
+            public int dark = 0;
+        }
+
+        public class ClanWarSearchMember
+        {
+            public int tempPosition = -1;
+            public int warPosition = -1;
+            public ClanMember data = new ClanMember();
+            public List<Building> Buildings = new List<Building>();
+
+            public int wallsPower = 0;
+            public int defencePower = 0;
+
+            public int townHall = 0;
+            public int spellFactory = 0;
+            public int darkSpellFactory = 0;
+            public int barracks = 0;
+            public int darkBarracks = 0;
+            public int campsCapacity = 0;
         }
 
         public class Clan
@@ -59,12 +124,13 @@ namespace AhmetsHub.ClashOfPirates
         public class ClanWar
         {
             public long id = 0;
-            public long attacker = 0;
-            public long defender = 0;
+            public long clan1 = 0;
+            public long clan2 = 0;
+            public int stage = 0;
             public DateTime start;
             public List<ClanWarAttack> attacks = new List<ClanWarAttack>();
         }
-
+        /*
         public class ClanWarAttack
         {
             public long id = 0;
@@ -72,7 +138,7 @@ namespace AhmetsHub.ClashOfPirates
             public long defender = 0;
             public DateTime start;
             public int stars = 0;
-        }
+        }*/
 
         public class ClanMember
         {
@@ -84,6 +150,10 @@ namespace AhmetsHub.ClashOfPirates
             public int trophies = 0;
             public int townHallLevel = 1;
             public bool online = false;
+            public long clanID = 0;
+            public int clanRank = 0;
+            public long warID = 0;
+            public int warPos = 0;
         }
 
         public class Player
@@ -174,7 +244,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum BuildingID
         {
-            townhall, goldmine, goldstorage, elixirmine, elixirstorage, darkelixirmine, darkelixirstorage, buildershut, armycamp, barracks, darkbarracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap, clancastle
+            townhall, goldmine, goldstorage, elixirmine, elixirstorage, darkelixirmine, darkelixirstorage, buildershut, armycamp, barracks, darkbarracks, wall, cannon, archertower, mortor, airdefense, wizardtower, hiddentesla, bombtower, xbow, infernotower, decoration, obstacle, boomb, springtrap, airbomb, giantbomb, seekingairmine, skeletontrap, clancastle, spellfactory, darkspellfactory
         }
 
         public static int GetStorageGoldAndElixirLoot(int townhallLevel, float storage)

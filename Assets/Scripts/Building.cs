@@ -276,6 +276,7 @@ namespace AhmetsHub.ClashOfPirates
                 packet.Write(selectedInstanse.databaseID);
                 packet.Write(selectedInstanse.currentX);
                 packet.Write(selectedInstanse.currentY);
+                packet.Write(UI_WarLayout.instanse.isActive ? 2 : 1);
                 Sender.TCP_Send(packet);
                 _baseArea.gameObject.SetActive(false);
             }
@@ -288,6 +289,13 @@ namespace AhmetsHub.ClashOfPirates
                         PlacedOnGrid(_originalX, _originalY);
                     }
                     _baseArea.gameObject.SetActive(false);
+                }
+                else
+                {
+                    if (_originalX == currentX && _originalY == currentY)
+                    {
+                        _baseArea.gameObject.SetActive(false);
+                    }
                 }
             }
         }

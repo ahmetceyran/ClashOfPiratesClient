@@ -315,7 +315,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private RectTransform unitsGrid = null;
         [SerializeField] private UI_BattleUnit unitsPrefab = null;
         private static UI_Battle _instance = null; public static UI_Battle instanse { get { return _instance; } }
-        private bool _active = true; public bool isActive { get { return _active; } }
+        private bool _active = false; public bool isActive { get { return _active; } }
 
         [HideInInspector] public int selectedUnit = -1;
 

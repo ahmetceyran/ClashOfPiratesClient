@@ -36,7 +36,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
         public static readonly int[] clanRanksWithWarPermission = { 1, 2 };
-        public static readonly int[] clanWarAvailableCounts = { 1, 5, 10, 15, 20, 30, 40, 50 };
+        public static readonly int[] clanWarAvailableCounts = { 5, 10, 15, 20, 30, 40, 50 };
 
         public enum ClanJoinType
         {
@@ -130,15 +130,6 @@ namespace AhmetsHub.ClashOfPirates
             public DateTime start;
             public List<ClanWarAttack> attacks = new List<ClanWarAttack>();
         }
-        /*
-        public class ClanWarAttack
-        {
-            public long id = 0;
-            public long attacker = 0;
-            public long defender = 0;
-            public DateTime start;
-            public int stars = 0;
-        }*/
 
         public class ClanMember
         {
@@ -332,9 +323,15 @@ namespace AhmetsHub.ClashOfPirates
             public Unit unit = null;
         }
 
+        public enum BattleType
+        {
+            normal, war
+        }
+
         public class BattleData
         {
             public Battle battle = null;
+            public BattleType type = BattleType.normal;
             public List<BattleFrame> savedFrames = new List<BattleFrame>();
             public List<BattleFrame> frames = new List<BattleFrame>();
         }
@@ -402,6 +399,8 @@ namespace AhmetsHub.ClashOfPirates
             public long databaseID = 0;
             public int x = 0;
             public int y = 0;
+            public int warX = -1;
+            public int warY = -1;
             public int columns = 0;
             public int rows = 0;
             public int goldStorage = 0;

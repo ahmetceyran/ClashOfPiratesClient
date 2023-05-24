@@ -75,6 +75,13 @@ namespace AhmetsHub.ClashOfPirates
                 packet.Write(Building.buildInstanse.id.ToString());
                 packet.Write(Building.buildInstanse.currentX);
                 packet.Write(Building.buildInstanse.currentY);
+                packet.Write(UI_WarLayout.instanse.isActive ? 2 : 1);
+                packet.Write(UI_WarLayout.instanse.placingID);
+                if (UI_WarLayout.instanse.isActive && UI_WarLayout.instanse.placingItem != null)
+                {
+                    Destroy(UI_WarLayout.instanse.placingItem);
+                    UI_WarLayout.instanse.placingItem = null;
+                }
                 Sender.TCP_Send(packet);
                 Cancel();
             }
@@ -86,6 +93,11 @@ namespace AhmetsHub.ClashOfPirates
             {
                 CameraController.instanse.isPlacingBuilding = false;
                 Building.buildInstanse.RemovedFromGrid();
+                if (UI_WarLayout.instanse.isActive && UI_WarLayout.instanse.placingItem != null)
+                {
+                    UI_WarLayout.instanse.placingItem.SetActive(true);
+                    UI_WarLayout.instanse.placingItem = null;
+                }
             }
         }
 

@@ -11,8 +11,9 @@ namespace AhmetsHub.ClashOfPirates
 
         [SerializeField] private Image _image = null;
         [SerializeField] private TextMeshProUGUI _name = null;
+        public GameObject selectedEffects = null;
 
-        private Data.ClanMember _data = null;
+        [HideInInspector] public Data.ClanMember _data = null;
 
         private void Start()
         {
@@ -25,13 +26,14 @@ namespace AhmetsHub.ClashOfPirates
 
         public void Initialize(Data.ClanMember data)
         {
+            selectedEffects.SetActive(false);
             _data = data;
             _name.text = (_data.warPos + 1).ToString() + ". " + data.name;
         }
 
         private void Select()
         {
-            
+            UI_Clan.instanse.SelectWarMember(this);
         }
 
     }

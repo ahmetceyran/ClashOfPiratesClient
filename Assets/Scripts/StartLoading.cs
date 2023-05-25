@@ -1,4 +1,4 @@
-namespace AhmetsHub.ClashOfPirates
+namespace AhmetsHub.ClashOfPirates 
 { 
     using System.Collections;
     using UnityEngine;

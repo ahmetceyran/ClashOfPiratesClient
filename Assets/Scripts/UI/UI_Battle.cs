@@ -33,6 +33,7 @@ namespace AhmetsHub.ClashOfPirates
         private List<UnitToAdd> toAdd = new List<UnitToAdd>();
         private long target = 0;
         private bool surrender = false;
+        private Data.BattleType _battleType = Data.BattleType.normal;
 
         public class BuildingOnGrid
         {
@@ -102,21 +103,62 @@ namespace AhmetsHub.ClashOfPirates
             MessageBox.Open(1, 0.8f, true, MessageResponded, new string[] { "There is no target to attack at this moment. Please try again later." }, new string[] { "OK" });
         }
 
-        public void Display(List<Data.Building> buildings, long defender)
+        public bool Display(List<Data.Building> buildings, long defender, Data.BattleType battleType)
         {
-            target = defender;
-            startbuildings = buildings;
-            battleBuildings.Clear();
+            ClearUnits();
+            for (int i = 0; i < Player.instanse.data.units.Count; i++)
+            {
+                if (!Player.instanse.data.units[i].ready)
+                {
+                    continue;
+                }
+                int k = -1;
+                for (int j = 0; j < units.Count; j++)
+                {
+                    if (units[j].id == Player.instanse.data.units[i].id)
+                    {
+                        k = j;
+                        break;
+                    }
+                }
+                if (k < 0)
+                {
+                    k = units.Count;
+                    UI_BattleUnit bu = Instantiate(unitsPrefab, unitsGrid);
+                    bu.Initialize(Player.instanse.data.units[i].id);
+                    units.Add(bu);
+                }
+                units[k].Add(Player.instanse.data.units[i].databaseID);
+            }
 
+            if (units.Count <= 0)
+            {
+                MessageBox.Open(1, 0.8f, true, MessageResponded, new string[] { "You do not have any units for battle.." }, new string[] { "OK" });
+                return false;
+            }
+
+            _battleType = battleType;
             int townhallLevel = 1;
             for (int i = 0; i < buildings.Count; i++)
             {
                 if (buildings[i].id == Data.BuildingID.townhall)
                 {
                     townhallLevel = buildings[i].level;
-                    break;
+                    if (_battleType == Data.BattleType.normal)
+                    {
+                        break;
+                    }
+                }
+                if (_battleType == Data.BattleType.war)
+                {
+                    buildings[i].x = buildings[i].warX;
+                    buildings[i].y = buildings[i].warY;
                 }
             }
+
+            target = defender;
+            startbuildings = buildings;
+            battleBuildings.Clear();
 
             for (int i = 0; i < buildings.Count; i++)
             {
@@ -155,7 +197,6 @@ namespace AhmetsHub.ClashOfPirates
 
             ClearBuildingsOnGrid();
             ClearUnitsOnGrid();
-            ClearUnits();
 
             UI_Main.instanse._grid.Clear();
             for (int i = 0; i < battleBuildings.Count; i++)
@@ -177,34 +218,12 @@ namespace AhmetsHub.ClashOfPirates
                     building.index = i;
                     buildingsOnGrid.Add(building);
                 }
+
+                battleBuildings[i].building.x += Data.battleGridOffset;
+                battleBuildings[i].building.y += Data.battleGridOffset;
             }
 
-            for (int i = 0; i < Player.instanse.data.units.Count; i++)
-            {
-                if (!Player.instanse.data.units[i].ready)
-                {
-                    continue;
-                }
-                int k = -1;
-                for (int j = 0; j < units.Count; j++)
-                {
-                    if (units[j].id == Player.instanse.data.units[i].id)
-                    {
-                        k = j;
-                        break;
-                    }
-                }
-                if (k < 0)
-                {
-                    k = units.Count;
-                    UI_BattleUnit bu = Instantiate(unitsPrefab, unitsGrid);
-                    bu.Initialize(Player.instanse.data.units[i].id);
-                    units.Add(bu);
-                }
-                units[k].Add(Player.instanse.data.units[i].databaseID);
-            }
-
-            _findButton.gameObject.SetActive(true);
+            _findButton.gameObject.SetActive(_battleType == Data.BattleType.normal);
             _closeButton.gameObject.SetActive(true);
             _surrenderButton.gameObject.SetActive(false);
             baseTime = DateTime.Now;
@@ -220,6 +239,8 @@ namespace AhmetsHub.ClashOfPirates
             surrender = false;
             readyToStart = true;
             isStarted = false;
+
+            return true;
         }
 
         private void UpdateLoots()
@@ -245,6 +266,7 @@ namespace AhmetsHub.ClashOfPirates
             opponent.buildings = startbuildings;
             string data = Data.Serialize<Data.OpponentData>(opponent);
             packet.Write(data);
+            packet.Write((int)_battleType);
             Sender.TCP_Send(packet);
         }
 
@@ -529,7 +551,7 @@ namespace AhmetsHub.ClashOfPirates
             {
                 if (battle._units[unitsOnGrid[i].index].health > 0)
                 {
-                    Vector3 position = new Vector3(battle._units[unitsOnGrid[i].index].position.x, 0, battle._units[unitsOnGrid[i].index].position.y);
+                    Vector3 position = new Vector3(battle._units[unitsOnGrid[i].index].positionOnGrid.x, 0, battle._units[unitsOnGrid[i].index].positionOnGrid.y);
                     unitsOnGrid[i].transform.localPosition = position;
                   
                     if(battle._units[unitsOnGrid[i].index].health < battle._units[unitsOnGrid[i].index].unit.health)
@@ -589,7 +611,7 @@ namespace AhmetsHub.ClashOfPirates
                 if (prefab)
                 {
                     BattleUnit unit = Instantiate(prefab, UI_Main.instanse._grid.transform);
-                    unit.transform.localPosition = new Vector3(battle._units[u].position.x, 0, battle._units[u].position.y);
+                    unit.transform.localPosition = new Vector3(battle._units[u].positionOnGrid.x, 0, battle._units[u].positionOnGrid.y);
                     unit.Initialize(u, battle._units[u].unit.databaseID);
 
                     unit.healthBar = Instantiate(healthBarPrefab, healthBarGrid);

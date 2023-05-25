@@ -6,6 +6,7 @@ namespace AhmetsHub.ClashOfPirates
     using TMPro;
     using UnityEngine;
     using UnityEngine.UI;
+    using System;
 
     public class UI_Clan : MonoBehaviour
     {
@@ -79,6 +80,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private GameObject _warMapPanel = null;
         [SerializeField] private GameObject _warMapSelectPanel = null;
         [SerializeField] private TextMeshProUGUI _warSelectedName = null;
+        [SerializeField] private TextMeshProUGUI _warTimer = null;
         [SerializeField] private Button _warSelectedAttack = null;
         [SerializeField] private Button _warEditLayout = null;
         [SerializeField] private TextMeshProUGUI _warClan1Name = null;
@@ -116,6 +118,8 @@ namespace AhmetsHub.ClashOfPirates
 
         private int warMemberIconSize = 100;
         [HideInInspector] public UI_WarMember selectedWarMember = null;
+        [HideInInspector] public Data.ClanWarData warData = null;
+        private int playerAttacksCount = 0;
 
         private void Awake()
         {
@@ -208,13 +212,9 @@ namespace AhmetsHub.ClashOfPirates
             selectedWarMember = item;
             _warSelectedName.text = selectedWarMember._data.name;
             _warSelectedAttack.gameObject.SetActive(selectedWarMember._data.clanID != Player.instanse.data.clanID);
+            _warSelectedAttack.interactable = (warData.clan1.war.stage == 2);
             selectedWarMember.selectedEffects.SetActive(true);
             _warMapSelectPanel.gameObject.SetActive(true);
-        }
-
-        private void Attack()
-        {
-            Debug.Log("TODO: Start the attack");
         }
 
         private void EditLayout()
@@ -281,8 +281,36 @@ namespace AhmetsHub.ClashOfPirates
             Sender.TCP_Send(packet);
         }
 
+        private void Update()
+        {
+            if (_active && warData != null && warData.clan1 != null)
+            {
+                double seconds = 0;
+                if (warData.clan1.war != null || warData.clan1.war.stage == 0)
+                {
+                    TimeSpan span = Player.instanse.data.nowTime - warData.clan1.war.start;
+                    if (warData.clan1.war.stage == 1)
+                    {
+                        if (span.TotalSeconds < (Data.clanWarPrepHours * 3600))
+                        {
+                            seconds = (Data.clanWarPrepHours * 3600) - span.TotalSeconds;
+                        }
+                    }
+                    else
+                    {
+                        if (span.TotalSeconds < ((Data.clanWarPrepHours + Data.clanWarBattleHours) * 3600))
+                        {
+                            seconds = ((Data.clanWarPrepHours + Data.clanWarBattleHours) * 3600) - span.TotalSeconds;
+                        }
+                    }
+                }
+                _warTimer.text = TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
+            }
+        }
+
         public void WarOpen(Data.ClanWarData data)
         {
+            warData = data;
             ClearWarMembers();
             selectedWarMember = null;
             _warMapSelectPanel.gameObject.SetActive(false);
@@ -308,7 +336,34 @@ namespace AhmetsHub.ClashOfPirates
                         if (data.clan1.members[i].warPos >= 0 && data.clan1.members[i].warPos < _warMemberMap1Parents.Length && _warMemberMap1Parents[data.clan1.members[i].warPos] != null)
                         {
                             UI_WarMember member = Instantiate(_warMemberPrefab, _warMemberMap1Parents[data.clan1.members[i].warPos]);
-                            member.Initialize(data.clan1.members[i]);
+
+                            int attacks = 0;
+                            for (int j = 0; j < data.clan1.war.attacks.Count; j++)
+                            {
+                                if (data.clan1.war.attacks[j].attacker == data.clan1.members[i].id)
+                                {
+                                    attacks++;
+                                }
+                            }
+
+                            Data.ClanWarAttack bestAttack = null;
+                            for (int j = 0; j < data.clan2.war.attacks.Count; j++)
+                            {
+                                if (data.clan2.war.attacks[j].defender == data.clan1.members[i].id)
+                                {
+                                    if (bestAttack == null || bestAttack.stars < data.clan2.war.attacks[j].stars)
+                                    {
+                                        bestAttack = data.clan2.war.attacks[j];
+                                    }
+                                }
+                            }
+
+                            if (data.clan1.members[i].id == Player.instanse.data.id)
+                            {
+                                playerAttacksCount = attacks;
+                            }
+
+                            member.Initialize(data.clan1.members[i], attacks, bestAttack);
                             RectTransform rect = member.GetComponent<RectTransform>();
                             rect.sizeDelta = new Vector2(warMemberIconSize, warMemberIconSize);
                             warMembers.Add(member);
@@ -326,7 +381,34 @@ namespace AhmetsHub.ClashOfPirates
                         if (data.clan2.members[i].warPos >= 0 && data.clan2.members[i].warPos < _warMemberMap2Parents.Length && _warMemberMap2Parents[data.clan2.members[i].warPos] != null)
                         {
                             UI_WarMember member = Instantiate(_warMemberPrefab, _warMemberMap2Parents[data.clan2.members[i].warPos]);
-                            member.Initialize(data.clan2.members[i]);
+
+                            int attacks = 0;
+                            for (int j = 0; j < data.clan2.war.attacks.Count; j++)
+                            {
+                                if (data.clan2.war.attacks[j].attacker == data.clan2.members[i].id)
+                                {
+                                    attacks++;
+                                }
+                            }
+
+                            Data.ClanWarAttack bestAttack = null;
+                            for (int j = 0; j < data.clan1.war.attacks.Count; j++)
+                            {
+                                if (data.clan1.war.attacks[j].defender == data.clan2.members[i].id)
+                                {
+                                    if (bestAttack == null || bestAttack.stars < data.clan1.war.attacks[j].stars)
+                                    {
+                                        bestAttack = data.clan1.war.attacks[j];
+                                    }
+                                }
+                            }
+
+                            if (data.clan2.members[i].id == Player.instanse.data.id)
+                            {
+                                playerAttacksCount = attacks;
+                            }
+
+                            member.Initialize(data.clan2.members[i], attacks, bestAttack);
                             RectTransform rect = member.GetComponent<RectTransform>();
                             rect.sizeDelta = new Vector2(warMemberIconSize, warMemberIconSize);
                             warMembers.Add(member);
@@ -341,10 +423,12 @@ namespace AhmetsHub.ClashOfPirates
                 _warClan1Name.text = data.clan1.name;
                 _warClan1Background.color = Tools.HexToColor(data.clan1.backgroundColor);
                 _warClan1Icon.color = Tools.HexToColor(data.clan1.patternColor);
+                _warClan1Icon.sprite = patterns[data.clan1.pattern];
 
                 _warClan2Name.text = data.clan2.name;
                 _warClan2Background.color = Tools.HexToColor(data.clan2.backgroundColor);
                 _warClan2Icon.color = Tools.HexToColor(data.clan2.patternColor);
+                _warClan2Icon.sprite = patterns[data.clan2.pattern];
 
                 _warMapPanel.SetActive(true);
             }
@@ -377,6 +461,38 @@ namespace AhmetsHub.ClashOfPirates
             _warMap1Content.anchoredPosition = Vector2.zero;
 
             _warPanel.SetActive(true);
+        }
+
+        private void Attack()
+        {
+            if (selectedWarMember != null && playerAttacksCount < Data.clanWarAttacksPerPlayer)
+            {
+                Packet packet = new Packet();
+                packet.Write((int)Player.RequestsID.WARATTACK);
+                packet.Write(selectedWarMember._data.id);
+                Sender.TCP_Send(packet);
+            }
+        }
+
+        public void AttackResponse(long target, Data.OpponentData opponent)
+        {
+            if (target > 0 && opponent != null)
+            {
+                bool attack = UI_Battle.instanse.Display(opponent.buildings, target, Data.BattleType.war);
+                if (attack)
+                {
+                    UI_Main.instanse.SetStatus(false);
+                    Close();
+                }
+                else
+                {
+                    WarOpen();
+                }
+            }
+            else
+            {
+                Debug.Log("No target found.");
+            }
         }
 
         private void WarEnemy()

@@ -16,15 +16,19 @@ namespace AhmetsHub.ClashOfPirates
         public static readonly int battlePrepDuration = 30;
         public static readonly int gridSize = 45;
         public static readonly float gridCellSize = 1;
+
         public static readonly float battleFrameRate = 0.1f;
         public static readonly int battleTilesWorthOfOneWall = 15;
         public static readonly int battleGroupWallAttackRadius = 5;
+        public static readonly int battleGridOffset = 1;
 
         public static readonly int clanMaxMembers = 50;
         public static readonly int clansPerPage = 20;
         public static readonly int clanNameMinLength = 3;
         public static readonly int clanCreatePrice = 40000;
-
+        public static readonly int clanWarAttacksPerPlayer = 2;
+        public static readonly int clanWarPrepHours = 24;
+        public static readonly int clanWarBattleHours = 24;
         public static readonly double clanWarMatchMinPercentage = 0.70d;
 
         public static readonly double clanWarMatchTownHallEffectPercentage = 0.60d;
@@ -36,7 +40,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
         public static readonly int[] clanRanksWithWarPermission = { 1, 2 };
-        public static readonly int[] clanWarAvailableCounts = { 5, 10, 15, 20, 30, 40, 50 };
+        public static readonly int[] clanWarAvailableCounts = { 1, 5, 10, 15, 20, 30, 40, 50 };
 
         public enum ClanJoinType
         {
@@ -82,6 +86,7 @@ namespace AhmetsHub.ClashOfPirates
             public int gold = 0;
             public int elixir = 0;
             public int dark = 0;
+            public bool starsCounted = false;
         }
 
         public class ClanWarSearchMember
@@ -149,6 +154,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public class Player
         {
+            public long id = 0;
             public string name = "Player";
             public int gems = 0;
             public int trophies = 0;
@@ -167,6 +173,93 @@ namespace AhmetsHub.ClashOfPirates
         public enum UnitID
         {
             barbarian, archer, goblin, healer, wallbreaker, giant, miner, balloon, wizard, dragon, pekka, babydragon, electrodragon, yeti, dragonrider, electrotitan, minion, hogrider, valkyrie, golem, witch, lavahound, bowler, icegolem, headhunter
+        }
+
+        public static int GetClanWarGainedXP(int gainedStars, int enemyGainedStars, int maxStars, bool didWonFirstAttack)
+        {
+            int xp = 0;
+            double percentage = (double)gainedStars / (double)enemyGainedStars;
+
+            if (percentage >= 0.4d)
+            {
+                xp += 10;
+            }
+
+            if (percentage >= 0.6d)
+            {
+                xp += 25;
+            }
+
+            if (gainedStars > enemyGainedStars)
+            {
+                xp += 50;
+            }
+
+            if (didWonFirstAttack)
+            {
+                xp += 10;
+            }
+
+            return xp;
+        }
+
+        public static int GetClanNexLevelRequiredXp(int currentLevel)
+        {
+            switch (currentLevel)
+            {
+                case 1: return 0;
+                case 2: return 500;
+                case 3: return 1200;
+                case 4: return 1900;
+                case 5: return 3100;
+                case 6: return 3800;
+                case 7: return 4500;
+                case 8: return 5200;
+                case 9: return 5900;
+                case 10: return 7900;
+                case 11: return 8600;
+                case 12: return 9300;
+                case 13: return 10000;
+                case 14: return 10700;
+                case 15: return 15700;
+                case 16: return 16400;
+                case 17: return 17100;
+                case 18: return 17800;
+                case 19: return 18500;
+                case 20: return 23500;
+                case 21: return 24200;
+                case 22: return 24900;
+                case 23: return 25600;
+                case 24: return 26300;
+                case 25: return 31300;
+                case 26: return 32000;
+                case 27: return 32700;
+                case 28: return 33400;
+                case 29: return 34100;
+                case 30: return 39100;
+                case 31: return 39800;
+                case 32: return 40500;
+                case 33: return 41200;
+                case 34: return 41900;
+                case 35: return 46900;
+                case 36: return 47600;
+                case 37: return 48300;
+                case 38: return 49000;
+                case 39: return 49700;
+                case 40: return 54700;
+                case 41: return 55400;
+                case 42: return 56100;
+                case 43: return 56800;
+                case 44: return 57500;
+                case 45: return 62500;
+                case 46: return 63200;
+                case 47: return 63900;
+                case 48: return 64600;
+                case 49: return 65300;
+                case 50: return 70300;
+                case 51: return 71000;
+                default: return 99999999;
+            }
         }
 
         public static bool IsUnitUnlocked(UnitID id, int barracksLevel, int darkBarracksLevel)
@@ -309,6 +402,34 @@ namespace AhmetsHub.ClashOfPirates
             return (win, lose);
         }
 
+        public static (int, int) GetWarTrophies(int clan1Trophies, int clan2Trophies, int clan1Stars, int clan2Stars, int maxStars)
+        {
+            int clan1 = 0;
+            int clan2 = 0;
+            if (clan1Stars != clan2Stars && (clan1Stars > 0 || clan2Stars > 0))
+            {
+                double delta = Math.Abs(clan1Trophies - clan2Trophies);
+                if (clan1Stars > clan2Stars)
+                {
+                    double percentage = (double)clan1Stars / (double)maxStars;
+                    clan1 = (int)Math.Floor((20 + (clan1Trophies < clan2Trophies ? delta * 0.05d : 0)) * percentage);
+                    clan2 = -clan1;
+                }
+                else
+                {
+                    double percentage = (double)clan2Stars / (double)maxStars;
+                    clan2 = (int)Math.Floor((20 + (clan2Trophies < clan1Trophies ? delta * 0.05d : 0)) * percentage);
+                    clan1 = -clan2;
+                }
+            }
+            else
+            {
+                clan1 = -5;
+                clan2 = -5;
+            }
+            return (clan1, clan2);
+        }
+
         public class BattleFrame
         {
             public int frame = 0;
@@ -325,7 +446,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum BattleType
         {
-            normal, war
+            normal = 1, war = 2
         }
 
         public class BattleData

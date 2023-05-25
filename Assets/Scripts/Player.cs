@@ -16,7 +16,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25
         }
 
         private void Start()
@@ -343,6 +343,16 @@ namespace AhmetsHub.ClashOfPirates
                     case RequestsID.WARSTARTED:
                         databaseID = packet.ReadInt();
                         UI_Clan.instanse.WarStarted(databaseID);
+                        break;
+                    case RequestsID.WARATTACK:
+                        databaseID = packet.ReadLong();
+                        Data.OpponentData warOpponent = null;
+                        if (databaseID > 0)
+                        {
+                            string d = packet.ReadString();
+                            warOpponent = Data.Desrialize<Data.OpponentData>(d);
+                        }
+                        UI_Clan.instanse.AttackResponse(databaseID, warOpponent);
                         break;
                 }
             }

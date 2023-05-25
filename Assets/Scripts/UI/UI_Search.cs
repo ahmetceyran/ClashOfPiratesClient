@@ -56,9 +56,16 @@ namespace AhmetsHub.ClashOfPirates
         {
             if(target > 0 && opponent != null && target != lastTarget)
             {
-                lastTarget = target;
-                UI_Battle.instanse.Display(opponent.buildings, target);
                 SetStatus(false);
+                bool attack = UI_Battle.instanse.Display(opponent.buildings, target, Data.BattleType.normal);
+                if (attack)
+                {
+                    lastTarget = target;
+                }
+                else
+                {
+                    UI_Main.instanse.SetStatus(true);
+                }
             }
             else
             {

@@ -201,9 +201,9 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
                     planePosition = UI_Main.instanse._grid.transform.InverseTransformPoint(planePosition);
-                    if (planePosition.x >= 0 && planePosition.x < Data.gridSize && planePosition.z >= 0 && planePosition.z < Data.gridSize)
+                    if (planePosition.x >= (0 - Data.battleGridOffset) && planePosition.x < (Data.gridSize + Data.battleGridOffset) && planePosition.z >= (0 - Data.battleGridOffset) && planePosition.z < (Data.gridSize + Data.battleGridOffset))
                     {
-                        UI_Battle.instanse.PlaceUnit((int)planePosition.x, (int)planePosition.z);
+                        UI_Battle.instanse.PlaceUnit(Mathf.FloorToInt(planePosition.x), Mathf.FloorToInt(planePosition.z));
                     }
                 }
             }

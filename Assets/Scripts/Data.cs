@@ -72,6 +72,15 @@ namespace AhmetsHub.ClashOfPirates
             public bool searching = false;
             public int count = 0;
             public string starter = "";
+            public long clan1ID = 0;
+            public long clan2ID = 0;
+            public long winnerID = 0;
+            public int size = 0;
+            public bool hasReport = false;
+            public int clan1Stars = 0;
+            public int clan2Stars = 0;
+            public int maxStars = 0;
+            public DateTime startTime;
             public Clan clan1 = null;
             public Clan clan2 = null;
         }

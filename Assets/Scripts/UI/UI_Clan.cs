@@ -52,6 +52,11 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _profileClans = null;
         [SerializeField] private Button _profileEdit = null;
         [SerializeField] private Button _profileWar = null;
+        [SerializeField] private Button _profileWarHistory = null;
+        [SerializeField] private Button _profileWarHistoryClose = null;
+        [SerializeField] private GameObject _profileHistoryPanel = null;
+        [SerializeField] private UI_WarReportItem _profileHistoryPrefab = null;
+        [SerializeField] private RectTransform _profileHistoryGrid = null;
         [SerializeField] private TextMeshProUGUI _profileName = null;
         [SerializeField] private Image _profileBackground = null;
         [SerializeField] private Image _profileIcon = null;
@@ -97,6 +102,18 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private RectTransform _warMap1Content = null;
         [SerializeField] private RectTransform _warMap2Content = null;
         [SerializeField] private UI_WarMember _warMemberPrefab = null;
+        [SerializeField] private GameObject _mapNormalPanel = null;
+        [SerializeField] private GameObject _mapReportPanel = null;
+        [SerializeField] private TextMeshProUGUI _reportTitle = null;
+        [SerializeField] private TextMeshProUGUI _reportStars = null;
+        [SerializeField] private TextMeshProUGUI _reportClan1Name = null;
+        [SerializeField] private TextMeshProUGUI _reportClan2Name = null;
+        [SerializeField] private Image _reportClan1Background = null;
+        [SerializeField] private Image _reportClan1Icon = null;
+        [SerializeField] private Image _reportClan2Background = null;
+        [SerializeField] private Image _reportClan2Icon = null;
+        [SerializeField] private Button _confirmButton = null;
+        [SerializeField] private Button _viewReportButton = null;
         [SerializeField] private RectTransform[] _warMemberMap1Parents = null;
         [SerializeField] private RectTransform[] _warMemberMap2Parents = null;
 
@@ -105,7 +122,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private List<UI_ClanItem> clanItems = new List<UI_ClanItem>();
         private bool editingProfile = false;
-
+        private int playerAttacksCount = 0;
         private static UI_Clan _instance = null; public static UI_Clan instanse { get { return _instance; } }
         private bool _active = true; public bool isActive { get { return _active; } }
 
@@ -115,11 +132,11 @@ namespace AhmetsHub.ClashOfPirates
         private List<UI_WarMember> warMembers = new List<UI_WarMember>();
         private List<UI_WarMemberSelect> warMembersSelect = new List<UI_WarMemberSelect>();
         private List<long> membersInWar = new List<long>();
-
+        private List<UI_WarReportItem> warHistoryItems = new List<UI_WarReportItem>();
         private int warMemberIconSize = 100;
         [HideInInspector] public UI_WarMember selectedWarMember = null;
         [HideInInspector] public Data.ClanWarData warData = null;
-        private int playerAttacksCount = 0;
+        private bool _isReport = false;
 
         private void Awake()
         {
@@ -151,12 +168,16 @@ namespace AhmetsHub.ClashOfPirates
             _warSearchBack.onClick.AddListener(WarSearchBack);
             _warMapBack.onClick.AddListener(WarMapBack);
             _profileWar.onClick.AddListener(WarOpen);
+            _profileWarHistory.onClick.AddListener(WarHistoryOpen);
             _warStart.onClick.AddListener(WarSearchStart);
             _warCancel.onClick.AddListener(WarSearchCancel);
             _warMembersBack.onClick.AddListener(WarMembersBack);
             _warConfirm.onClick.AddListener(WarConfirm);
             _warEditLayout.onClick.AddListener(EditLayout);
             _warSelectedAttack.onClick.AddListener(Attack);
+            _viewReportButton.onClick.AddListener(ViewWarResults);
+            _confirmButton.onClick.AddListener(ConfirmWarResults);
+            _profileWarHistoryClose.onClick.AddListener(CloseWarHistoryList);
         }
 
         public void Open()
@@ -186,6 +207,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void Close()
         {
+            ClearWarHistoryItems();
             ClearWarMembersSelect();
             ClearClanItems();
             ClearWarMembers();
@@ -212,9 +234,41 @@ namespace AhmetsHub.ClashOfPirates
             selectedWarMember = item;
             _warSelectedName.text = selectedWarMember._data.name;
             _warSelectedAttack.gameObject.SetActive(selectedWarMember._data.clanID != Player.instanse.data.clanID);
-            _warSelectedAttack.interactable = (warData.clan1.war.stage == 2);
+            _warSelectedAttack.interactable = (warData.clan1.war.stage == 2 && !_isReport);
             selectedWarMember.selectedEffects.SetActive(true);
             _warMapSelectPanel.gameObject.SetActive(true);
+        }
+
+        private void Attack()
+        {
+            if (selectedWarMember != null && playerAttacksCount < Data.clanWarAttacksPerPlayer)
+            {
+                Packet packet = new Packet();
+                packet.Write((int)Player.RequestsID.WARATTACK);
+                packet.Write(selectedWarMember._data.id);
+                Sender.TCP_Send(packet);
+            }
+        }
+
+        public void AttackResponse(long target, Data.OpponentData opponent)
+        {
+            if (target > 0 && opponent != null)
+            {
+                bool attack = UI_Battle.instanse.Display(opponent.buildings, target, Data.BattleType.war);
+                if (attack)
+                {
+                    UI_Main.instanse.SetStatus(false);
+                    Close();
+                }
+                else
+                {
+                    WarOpen();
+                }
+            }
+            else
+            {
+                Debug.Log("No target found.");
+            }
         }
 
         private void EditLayout()
@@ -258,10 +312,29 @@ namespace AhmetsHub.ClashOfPirates
             _profileIcon.sprite = patterns[profileClan.pattern];
             _profileBackground.color = Tools.HexToColor(profileClan.backgroundColor);
             _profileIcon.color = Tools.HexToColor(profileClan.patternColor);
+            _profileHistoryPanel.SetActive(false);
             _listPanel.SetActive(false);
             _createPanel.SetActive(false);
             _warPanel.SetActive(false);
             _profilePanel.SetActive(true);
+        }
+
+        private void CloseWarHistoryList()
+        {
+            ClearWarHistoryItems();
+            _profileHistoryPanel.SetActive(false);
+        }
+
+        public void OpenWarHistoryList(List<Data.ClanWarData> reports)
+        {
+            ClearWarHistoryItems();
+            for (int i = 0; i < reports.Count; i++)
+            {
+                UI_WarReportItem report = Instantiate(_profileHistoryPrefab, _profileHistoryGrid);
+                report.Initialize(reports[i]);
+                warHistoryItems.Add(report);
+            }
+            _profileHistoryPanel.SetActive(true);
         }
 
         public void WarStarted(long id)
@@ -274,42 +347,25 @@ namespace AhmetsHub.ClashOfPirates
             MessageBox.Open(1, 0.8f, true, ErrorConfirm, new string[] { "Clan war started." }, new string[] { "OK" });
         }
 
-        private void WarOpen()
+        public void WarOpen()
         {
             Packet packet = new Packet();
             packet.Write((int)Player.RequestsID.OPENWAR);
             Sender.TCP_Send(packet);
         }
 
-        private void Update()
+        public void WarHistoryOpen()
         {
-            if (_active && warData != null && warData.clan1 != null)
-            {
-                double seconds = 0;
-                if (warData.clan1.war != null || warData.clan1.war.stage == 0)
-                {
-                    TimeSpan span = Player.instanse.data.nowTime - warData.clan1.war.start;
-                    if (warData.clan1.war.stage == 1)
-                    {
-                        if (span.TotalSeconds < (Data.clanWarPrepHours * 3600))
-                        {
-                            seconds = (Data.clanWarPrepHours * 3600) - span.TotalSeconds;
-                        }
-                    }
-                    else
-                    {
-                        if (span.TotalSeconds < ((Data.clanWarPrepHours + Data.clanWarBattleHours) * 3600))
-                        {
-                            seconds = ((Data.clanWarPrepHours + Data.clanWarBattleHours) * 3600) - span.TotalSeconds;
-                        }
-                    }
-                }
-                _warTimer.text = TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
-            }
+            Packet packet = new Packet();
+            packet.Write((int)Player.RequestsID.WARREPORTLIST);
+            Sender.TCP_Send(packet);
         }
 
-        public void WarOpen(Data.ClanWarData data)
+        public void WarOpen(Data.ClanWarData data, bool isReport = false)
         {
+            _isReport = isReport;
+            _mapNormalPanel.SetActive(true);
+            _mapReportPanel.SetActive(false);
             warData = data;
             ClearWarMembers();
             selectedWarMember = null;
@@ -430,6 +486,44 @@ namespace AhmetsHub.ClashOfPirates
                 _warClan2Icon.color = Tools.HexToColor(data.clan2.patternColor);
                 _warClan2Icon.sprite = patterns[data.clan2.pattern];
 
+                _warEditLayout.gameObject.SetActive(data.clan1.war.stage == 1);
+                _viewReportButton.gameObject.SetActive(isReport);
+
+                if (isReport)
+                {
+                    _warTimer.text = "War has ended";
+
+                    _reportClan1Name.text = data.clan1.name;
+                    _reportClan1Background.color = Tools.HexToColor(data.clan1.backgroundColor);
+                    _reportClan1Icon.color = Tools.HexToColor(data.clan1.patternColor);
+                    _reportClan1Icon.sprite = patterns[data.clan1.pattern];
+
+                    _reportClan2Name.text = data.clan2.name;
+                    _reportClan2Background.color = Tools.HexToColor(data.clan2.backgroundColor);
+                    _reportClan2Icon.color = Tools.HexToColor(data.clan2.patternColor);
+                    _reportClan2Icon.sprite = patterns[data.clan2.pattern];
+
+                    if (warData.winnerID <= 0)
+                    {
+                        _reportTitle.text = "Draw";
+                        _reportTitle.color = Color.white;
+                    }
+                    else if (warData.winnerID == Player.instanse.data.clanID)
+                    {
+                        _reportTitle.text = "Vicrory";
+                        _reportTitle.color = Color.green;
+                    }
+                    else
+                    {
+                        _reportTitle.text = "Defeat";
+                        _reportTitle.color = Color.red;
+                    }
+
+                    _reportStars.text = warData.clan1Stars + " - " + warData.clan2Stars;
+                }
+                _mapNormalPanel.SetActive(!_isReport);
+                _mapReportPanel.SetActive(_isReport);
+                _warMapBack.gameObject.SetActive(!_isReport);
                 _warMapPanel.SetActive(true);
             }
             else
@@ -463,35 +557,57 @@ namespace AhmetsHub.ClashOfPirates
             _warPanel.SetActive(true);
         }
 
-        private void Attack()
+        private void ViewWarResults()
         {
-            if (selectedWarMember != null && playerAttacksCount < Data.clanWarAttacksPerPlayer)
-            {
-                Packet packet = new Packet();
-                packet.Write((int)Player.RequestsID.WARATTACK);
-                packet.Write(selectedWarMember._data.id);
-                Sender.TCP_Send(packet);
-            }
+            _warMapBack.gameObject.SetActive(false);
+            _mapNormalPanel.SetActive(false);
+            _mapReportPanel.SetActive(true);
         }
 
-        public void AttackResponse(long target, Data.OpponentData opponent)
+        private void ConfirmWarResults()
         {
-            if (target > 0 && opponent != null)
+            _warMapBack.gameObject.SetActive(true);
+            _mapNormalPanel.SetActive(true);
+            _mapReportPanel.SetActive(false);
+        }
+
+        private void Update()
+        {
+            if (_active && warData != null && warData.clan1 != null)
             {
-                bool attack = UI_Battle.instanse.Display(opponent.buildings, target, Data.BattleType.war);
-                if (attack)
+                if (warData.clan1.war != null && warData.clan1.war.stage > 0)
                 {
-                    UI_Main.instanse.SetStatus(false);
-                    Close();
+                    double seconds = 0;
+                    TimeSpan span = Player.instanse.data.nowTime - warData.clan1.war.start;
+                    if (warData.clan1.war.stage == 1)
+                    {
+                        if (span.TotalSeconds < (Data.clanWarPrepHours * 3600))
+                        {
+                            seconds = (Data.clanWarPrepHours * 3600) - span.TotalSeconds;
+                            _warTimer.text = TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss") + "\n" + "Prep Time";
+                        }
+                        else
+                        {
+                            // Prep time is over, it's barrle time
+                            warData.clan1.war.stage = 2;
+                            WarOpen();
+                        }
+                    }
+                    else
+                    {
+                        if (span.TotalSeconds < ((Data.clanWarPrepHours + Data.clanWarBattleHours) * 3600))
+                        {
+                            seconds = ((Data.clanWarPrepHours + Data.clanWarBattleHours) * 3600) - span.TotalSeconds;
+                            _warTimer.text = TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
+                        }
+                        else
+                        {
+                            warData.clan1.war.stage = 0;
+                            _warTimer.text = "War has ended";
+                            _mapNormalPanel.SetActive(false);
+                        }
+                    }
                 }
-                else
-                {
-                    WarOpen();
-                }
-            }
-            else
-            {
-                Debug.Log("No target found.");
             }
         }
 
@@ -954,6 +1070,18 @@ namespace AhmetsHub.ClashOfPirates
                 }
             }
             warMembersSelect.Clear();
+        }
+
+        private void ClearWarHistoryItems()
+        {
+            for (int i = 0; i < warHistoryItems.Count; i++)
+            {
+                if (warHistoryItems[i])
+                {
+                    Destroy(warHistoryItems[i].gameObject);
+                }
+            }
+            warHistoryItems.Clear();
         }
 
     }

@@ -15,6 +15,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] public TextMeshProUGUI _gemsText = null;
         [SerializeField] private Button _shopButton = null;
         [SerializeField] private Button _battleButton = null;
+        [SerializeField] private Button _chatButton = null;
 
         [SerializeField] public BuildGrid _grid = null;
         [SerializeField] public Building[] _buildingPrefabs = null;
@@ -39,6 +40,12 @@ namespace AhmetsHub.ClashOfPirates
         {
             _shopButton.onClick.AddListener(ShopButtonClicked);
             _battleButton.onClick.AddListener(BattleButtonClicked);
+            _chatButton.onClick.AddListener(ChatButtonClicked);
+        }
+
+        private void ChatButtonClicked()
+        {
+            UI_Chat.instanse.Open();
         }
 
         private void ShopButtonClicked()

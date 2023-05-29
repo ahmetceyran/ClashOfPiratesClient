@@ -25,6 +25,7 @@ namespace AhmetsHub.ClashOfPirates
         public static readonly int clanMaxMembers = 50;
         public static readonly int clansPerPage = 20;
         public static readonly int clanNameMinLength = 3;
+        public static readonly int clanJoinTimeGapHours = 24;
         public static readonly int clanCreatePrice = 40000;
         public static readonly int clanWarAttacksPerPlayer = 2;
         public static readonly int clanWarPrepHours = 24;
@@ -40,11 +41,57 @@ namespace AhmetsHub.ClashOfPirates
 
         public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
         public static readonly int[] clanRanksWithWarPermission = { 1, 2 };
-        public static readonly int[] clanWarAvailableCounts = { 1, 5, 10, 15, 20, 30, 40, 50 };
+        public static readonly int[] clanRanksWithAcceptJoinRequstsPermission = { 1, 2 };
+        public static readonly int[] clanWarAvailableCounts = { 5, 10, 15, 20, 30, 40, 50 };
+
+        public static readonly int globalChatArchiveMaxMessages = 30;
+        public static readonly int clanChatArchiveMaxMessages = 30;
+        public static readonly int chatSyncPeriod = 2;
+
+        public static readonly string mysqlDateTimeFormat = "%Y-%m-%d %H:%i:%s";
+
+        public enum ChatType
+        {
+            global = 1, clan = 2
+        }
 
         public enum ClanJoinType
         {
             AnyoneCanJoin = 0, NotAcceptingNewMembers = -1, TakingJoinRequests = 1
+        }
+
+        public static bool IsMessageGoodToSend(string message)
+        {
+
+            if (message.Contains("fork"))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public class CharMessage
+        {
+            public long id = 0;
+            public long accountID = 0;
+            public string name = "";
+            public Data.ChatType type = 0;
+            public long globalID = 0;
+            public long clanID = 0;
+            public string message = "";
+            public string color = "";
+            public string time = "";
+        }
+
+        public class JoinRequest
+        {
+            public long id = 0;
+            public long accountID = 0;
+            public string name = "";
+            public int level = 1;
+            public int trophies = 0;
+            public DateTime time;
         }
 
         public class ClansList

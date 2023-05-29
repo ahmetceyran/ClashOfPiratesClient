@@ -16,7 +16,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25, WARREPORTLIST = 26, WARREPORT = 27
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25, WARREPORTLIST = 26, WARREPORT = 27, JOINREQUESTS = 28, JOINRESPONSE = 29, GETCHATS = 30, SENDCHAT = 31
         }
 
         private void Start()
@@ -368,6 +368,29 @@ namespace AhmetsHub.ClashOfPirates
                             warReport = Data.Desrialize<Data.ClanWarData>(warReportData);
                         }
                         UI_Clan.instanse.WarOpen(warReport, true);
+                        break;
+                    case RequestsID.JOINREQUESTS:
+                        string requstsData = packet.ReadString();
+                        List<Data.JoinRequest> requests = Data.Desrialize<List<Data.JoinRequest>>(requstsData);
+                        UI_Clan.instanse.OpenRequestsList(requests);
+                        break;
+                    case RequestsID.JOINRESPONSE:
+                        response = packet.ReadInt();
+                        if (UI_ClanJoinRequest.active != null)
+                        {
+                            UI_ClanJoinRequest.active.Response(response);
+                            UI_ClanJoinRequest.active = null;
+                        }
+                        break;
+                    case RequestsID.SENDCHAT:
+                        response = packet.ReadInt();
+                        UI_Chat.instanse.ChatSendResponse(response);
+                        break;
+                    case RequestsID.GETCHATS:
+                        string chatsData = packet.ReadString();
+                        List<Data.CharMessage> messages = Data.Desrialize<List<Data.CharMessage>>(chatsData);
+                        int chatType = packet.ReadInt();
+                        UI_Chat.instanse.ChatSynced(messages, (Data.ChatType)chatType);
                         break;
                 }
             }

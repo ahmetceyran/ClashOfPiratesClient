@@ -55,6 +55,11 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _profileWarHistory = null;
         [SerializeField] private Button _profileWarHistoryClose = null;
         [SerializeField] private GameObject _profileHistoryPanel = null;
+        [SerializeField] private Button _profileJoinRequests = null;
+        [SerializeField] private Button _profileRequestsClose = null;
+        [SerializeField] private GameObject _profileRequestsPanel = null;
+        [SerializeField] private UI_ClanJoinRequest _profileRequestPrefab = null;
+        [SerializeField] private RectTransform _profileRequestGrid = null;
         [SerializeField] private UI_WarReportItem _profileHistoryPrefab = null;
         [SerializeField] private RectTransform _profileHistoryGrid = null;
         [SerializeField] private TextMeshProUGUI _profileName = null;
@@ -124,7 +129,7 @@ namespace AhmetsHub.ClashOfPirates
         private bool editingProfile = false;
         private int playerAttacksCount = 0;
         private static UI_Clan _instance = null; public static UI_Clan instanse { get { return _instance; } }
-        private bool _active = true; public bool isActive { get { return _active; } }
+        private bool _active = false; public bool isActive { get { return _active; } }
 
         private Data.Clan profileClan = null;
         private Data.Clan clanToSave = null;
@@ -133,6 +138,7 @@ namespace AhmetsHub.ClashOfPirates
         private List<UI_WarMemberSelect> warMembersSelect = new List<UI_WarMemberSelect>();
         private List<long> membersInWar = new List<long>();
         private List<UI_WarReportItem> warHistoryItems = new List<UI_WarReportItem>();
+        private List<UI_ClanJoinRequest> requestItems = new List<UI_ClanJoinRequest>();
         private int warMemberIconSize = 100;
         [HideInInspector] public UI_WarMember selectedWarMember = null;
         [HideInInspector] public Data.ClanWarData warData = null;
@@ -178,6 +184,8 @@ namespace AhmetsHub.ClashOfPirates
             _viewReportButton.onClick.AddListener(ViewWarResults);
             _confirmButton.onClick.AddListener(ConfirmWarResults);
             _profileWarHistoryClose.onClick.AddListener(CloseWarHistoryList);
+            _profileJoinRequests.onClick.AddListener(RequestsOpen);
+            _profileRequestsClose.onClick.AddListener(CloseRequestsList);
         }
 
         public void Open()
@@ -207,6 +215,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void Close()
         {
+            ClearRequestItems();
             ClearWarHistoryItems();
             ClearWarMembersSelect();
             ClearClanItems();
@@ -312,11 +321,52 @@ namespace AhmetsHub.ClashOfPirates
             _profileIcon.sprite = patterns[profileClan.pattern];
             _profileBackground.color = Tools.HexToColor(profileClan.backgroundColor);
             _profileIcon.color = Tools.HexToColor(profileClan.patternColor);
+            _profileRequestsClose.interactable = true;
+            _profileJoinRequests.gameObject.SetActive(Player.instanse.data.clanID > 0 && Player.instanse.data.clanID == clan.id);
+            _profileRequestsPanel.SetActive(false);
             _profileHistoryPanel.SetActive(false);
             _listPanel.SetActive(false);
             _createPanel.SetActive(false);
             _warPanel.SetActive(false);
             _profilePanel.SetActive(true);
+        }
+
+        public void RequestsOpen()
+        {
+            Packet packet = new Packet();
+            packet.Write((int)Player.RequestsID.JOINREQUESTS);
+            Sender.TCP_Send(packet);
+        }
+
+        private void CloseRequestsList()
+        {
+            _profileRequestsClose.interactable = false;
+            Open();
+        }
+
+        public void OpenRequestsList(List<Data.JoinRequest> requests)
+        {
+            UI_ClanJoinRequest.active = null;
+            ClearRequestItems();
+            bool havePermission = false;
+            if (Player.instanse.data.clanID > 0)
+            {
+                for (int i = 0; i < Data.clanRanksWithAcceptJoinRequstsPermission.Length; i++)
+                {
+                    if (Data.clanRanksWithAcceptJoinRequstsPermission[i] == Player.instanse.data.clanRank)
+                    {
+                        havePermission = true;
+                        break;
+                    }
+                }
+            }
+            for (int i = 0; i < requests.Count; i++)
+            {
+                UI_ClanJoinRequest request = Instantiate(_profileRequestPrefab, _profileRequestGrid);
+                request.Initialize(requests[i], havePermission);
+                requestItems.Add(request);
+            }
+            _profileRequestsPanel.SetActive(true);
         }
 
         private void CloseWarHistoryList()
@@ -1082,6 +1132,18 @@ namespace AhmetsHub.ClashOfPirates
                 }
             }
             warHistoryItems.Clear();
+        }
+
+        private void ClearRequestItems()
+        {
+            for (int i = 0; i < requestItems.Count; i++)
+            {
+                if (requestItems[i])
+                {
+                    Destroy(requestItems[i].gameObject);
+                }
+            }
+            requestItems.Clear();
         }
 
     }

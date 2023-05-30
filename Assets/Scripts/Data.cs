@@ -5,6 +5,8 @@ namespace AhmetsHub.ClashOfPirates
     using System.Collections.Generic;
     using System;
     using System.Threading.Tasks;
+    using System.Text;
+    using System.Security.Cryptography;
 
     public static class Data
     {
@@ -41,6 +43,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
         public static readonly int[] clanRanksWithWarPermission = { 1, 2 };
+        public static readonly int[] clanRanksWithKickMembersPermission = { 1, 2 };
         public static readonly int[] clanRanksWithAcceptJoinRequstsPermission = { 1, 2 };
         public static readonly int[] clanWarAvailableCounts = { 5, 10, 15, 20, 30, 40, 50 };
 
@@ -50,9 +53,60 @@ namespace AhmetsHub.ClashOfPirates
 
         public static readonly string mysqlDateTimeFormat = "%Y-%m-%d %H:%i:%s";
 
+        public static readonly int recoveryCodeExpiration = 300;
+        public static readonly int confirmationCodeExpiration = 300;
+        public static readonly int recoveryCodeLength = 6;
+
+        public static bool IsEmailValid(string email)
+        {
+            email = email.Trim();
+            if (email.EndsWith(".")) { return false; }
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch { return false; }
+        }
+
+        public static string RandomCode(int length)
+        {
+            if (length <= 0)
+            {
+                return "";
+            }
+            Random random = new Random();
+            const string chars = "0123456789";
+            string value = "";
+            while (value.Length < length)
+            {
+                value += chars[random.Next(0, chars.Length)].ToString();
+            }
+            return value;
+        }
+
+        public static string EncrypteToMD5(string data)
+        {
+            UTF8Encoding ue = new UTF8Encoding();
+            byte[] bytes = ue.GetBytes(data);
+            MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
+            byte[] hashBytes = md5.ComputeHash(bytes);
+            string hashString = "";
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                hashString = hashString + Convert.ToString(hashBytes[i], 16).PadLeft(2, '0');
+            }
+            return hashString.PadLeft(32, '0');
+        }
+
         public enum ChatType
         {
             global = 1, clan = 2
+        }
+
+        public enum ClanRank
+        {
+            member = 0, leader = 1, coleader = 2
         }
 
         public enum ClanJoinType
@@ -222,6 +276,7 @@ namespace AhmetsHub.ClashOfPirates
             public long clanID = 0;
             public int clanRank = 0;
             public long warID = 0;
+            public string email = "";
             public List<Building> buildings = new List<Building>();
             public List<Unit> units = new List<Unit>();
         }
@@ -531,6 +586,7 @@ namespace AhmetsHub.ClashOfPirates
         public class InitializationData
         {
             public long accountID = 0;
+            public string password = "";
             public List<ServerUnit> serverUnits = new List<ServerUnit>();
         }
 

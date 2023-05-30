@@ -16,17 +16,32 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25, WARREPORTLIST = 26, WARREPORT = 27, JOINREQUESTS = 28, JOINRESPONSE = 29, GETCHATS = 30, SENDCHAT = 31
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25, WARREPORTLIST = 26, WARREPORT = 27, JOINREQUESTS = 28, JOINRESPONSE = 29, GETCHATS = 30, SENDCHAT = 31, SENDCODE = 32, CONFIRMCODE = 33, EMAILCODE = 34, EMAILCONFIRM = 35, LOGOUT = 36, KICKMEMBER = 37
         }
+
+        public static readonly string username_key = "username";
+        public static readonly string password_key = "password";
 
         private void Start()
         {
             RealtimeNetworking.OnPacketReceived += ReceivedPaket;
             RealtimeNetworking.OnDisconnectedFromServer += DisconnectedFromServer;
             string device = SystemInfo.deviceUniqueIdentifier;
+            string password = "";
+            string username = "";
+            if (PlayerPrefs.HasKey(password_key))
+            {
+                password = PlayerPrefs.GetString(password_key);
+            }
+            if (PlayerPrefs.HasKey(password_key))
+            {
+                username = PlayerPrefs.GetString(username_key);
+            }
             Packet packet = new Packet();
             packet.Write((int)RequestsID.AUTH);
             packet.Write(device);
+            packet.Write(password);
+            packet.Write(username);
             Sender.TCP_Send(packet);
         }
 
@@ -80,8 +95,7 @@ namespace AhmetsHub.ClashOfPirates
                         timer = 0;
                         string authData = packet.ReadString();
                         initializationData = Data.Desrialize<Data.InitializationData>(authData);
-
-
+                        PlayerPrefs.SetString(password_key, initializationData.password);
                         SendSyncRequest();
                         break;
                     case RequestsID.SYNC:
@@ -298,7 +312,7 @@ namespace AhmetsHub.ClashOfPirates
                         {
                             string clanData = packet.ReadString();
                             clan = Data.Desrialize<Data.Clan>(clanData);
-                            if (clan.war.id > 0)
+                            if (clan.war != null && clan.war.id > 0)
                             {
                                 string warData = packet.ReadString();
                                 warMembers = Data.Desrialize<List<Data.ClanMember>>(warData);
@@ -391,6 +405,32 @@ namespace AhmetsHub.ClashOfPirates
                         List<Data.CharMessage> messages = Data.Desrialize<List<Data.CharMessage>>(chatsData);
                         int chatType = packet.ReadInt();
                         UI_Chat.instanse.ChatSynced(messages, (Data.ChatType)chatType);
+                        break;
+                    case RequestsID.EMAILCODE:
+                        response = packet.ReadInt();
+                        int expTime = packet.ReadInt();
+                        UI_Settings.instanse.EmailSendResponse(response, expTime);
+                        break;
+                    case RequestsID.EMAILCONFIRM:
+                        response = packet.ReadInt();
+                        string confEmail = packet.ReadString();
+                        UI_Settings.instanse.EmailConfirmResponse(response, confEmail);
+                        break;
+                    case RequestsID.KICKMEMBER:
+                        databaseID = packet.ReadLong();
+                        response = packet.ReadInt();
+                        if (response == -1)
+                        {
+                            string kicker = packet.ReadString();
+                            if (UI_Clan.instanse.isActive)
+                            {
+                                UI_Clan.instanse.Close();
+                            }
+                        }
+                        else
+                        {
+                            UI_Clan.instanse.kickResponse(databaseID, response);
+                        }
                         break;
                 }
             }
@@ -506,8 +546,13 @@ namespace AhmetsHub.ClashOfPirates
         {
             if (layoutIndex == 0)
             {
-                SceneManager.LoadScene(0);
+                RestartGame();
             }
+        }
+
+        public static void RestartGame()
+        {
+            SceneManager.LoadScene(0);
         }
 
     }

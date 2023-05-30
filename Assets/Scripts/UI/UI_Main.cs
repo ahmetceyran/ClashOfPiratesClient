@@ -16,6 +16,7 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _shopButton = null;
         [SerializeField] private Button _battleButton = null;
         [SerializeField] private Button _chatButton = null;
+        [SerializeField] private Button _settingsButton = null;
 
         [SerializeField] public BuildGrid _grid = null;
         [SerializeField] public Building[] _buildingPrefabs = null;
@@ -41,7 +42,14 @@ namespace AhmetsHub.ClashOfPirates
             _shopButton.onClick.AddListener(ShopButtonClicked);
             _battleButton.onClick.AddListener(BattleButtonClicked);
             _chatButton.onClick.AddListener(ChatButtonClicked);
+            _settingsButton.onClick.AddListener(SettingsButtonClicked);
         }
+
+        private void SettingsButtonClicked()
+        {
+            UI_Settings.instanse.Open();
+        }
+
 
         private void ChatButtonClicked()
         {

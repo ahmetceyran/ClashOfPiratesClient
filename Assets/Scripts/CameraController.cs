@@ -251,7 +251,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void MoveStarted()
         {
-            if ((UI_Main.instanse.isActive || UI_Battle.instanse.isActive || UI_WarLayout.instanse.isActive) && UI_Chat.instanse.isActive == false)
+            if ((UI_Main.instanse.isActive || UI_Battle.instanse.isActive || UI_WarLayout.instanse.isActive) && UI_Chat.instanse.isActive == false && UI_Settings.instanse.isActive == false)
             {
                 if (_building)
                 {
@@ -300,7 +300,7 @@ namespace AhmetsHub.ClashOfPirates
 
         private void ZoomStarted()
         {
-            if ((UI_Main.instanse.isActive || UI_Battle.instanse.isActive || UI_WarLayout.instanse.isActive) && UI_Chat.instanse.isActive == false)
+            if ((UI_Main.instanse.isActive || UI_Battle.instanse.isActive || UI_WarLayout.instanse.isActive) && UI_Chat.instanse.isActive == false && UI_Settings.instanse.isActive == false)
             {
                 Vector2 touch0 = _inputs.Main.TouchPosition0.ReadValue<Vector2>();
                 Vector2 touch1 = _inputs.Main.TouchPosition1.ReadValue<Vector2>();

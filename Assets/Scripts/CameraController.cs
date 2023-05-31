@@ -186,6 +186,11 @@ namespace AhmetsHub.ClashOfPirates
                                 //handled = true;
                                 UI_Clan.instanse.Open();
                             }
+                            else if (results[i].gameObject == UI_BuildingOptions.instanse.spellButton.gameObject)
+                            {
+                                //handled = true;
+                                UI_Spell.instanse.SetStatus(true);
+                            }
                         }
                         //if (handled)
                         //{
@@ -197,7 +202,7 @@ namespace AhmetsHub.ClashOfPirates
             }
             else if (UI_Battle.instanse.isActive)
             {
-                if (results.Count <= 0 && UI_Battle.instanse.selectedUnit >= 0)
+                if (results.Count <= 0 && (UI_Battle.instanse.selectedUnit >= 0 || UI_Battle.instanse.selectedSpell >= 0))
                 {
                     Vector3 planePosition = CameraScreenPositionToPlanePosition(position);
                     planePosition = UI_Main.instanse._grid.transform.InverseTransformPoint(planePosition);

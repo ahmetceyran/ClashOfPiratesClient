@@ -16,7 +16,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public enum RequestsID
         {
-            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25, WARREPORTLIST = 26, WARREPORT = 27, JOINREQUESTS = 28, JOINRESPONSE = 29, GETCHATS = 30, SENDCHAT = 31, SENDCODE = 32, CONFIRMCODE = 33, EMAILCODE = 34, EMAILCONFIRM = 35, LOGOUT = 36, KICKMEMBER = 37
+            AUTH = 1, SYNC = 2, BUILD = 3, REPLACE = 4, COLLECT = 5, PREUPGRADE = 6, UPGRADE = 7, INSTANTBUILD = 8, TRAIN = 9, CANCELTRAIN = 10, BATTLEFIND = 11, BATTLESTART = 12, BATTLEFRAME = 13, BATTLEEND = 14, OPENCLAN = 15, GETCLANS = 16, JOINCLAN = 17, LEAVECLAN = 18, EDITCLAN = 19, CREATECLAN = 20, OPENWAR = 21, STARTWAR = 22, CANCELWAR = 23, WARSTARTED = 24, WARATTACK = 25, WARREPORTLIST = 26, WARREPORT = 27, JOINREQUESTS = 28, JOINRESPONSE = 29, GETCHATS = 30, SENDCHAT = 31, SENDCODE = 32, CONFIRMCODE = 33, EMAILCODE = 34, EMAILCONFIRM = 35, LOGOUT = 36, KICKMEMBER = 37, BREW = 38, CANCELBREW = 39
         }
 
         public static readonly string username_key = "username";
@@ -33,7 +33,7 @@ namespace AhmetsHub.ClashOfPirates
             {
                 password = PlayerPrefs.GetString(password_key);
             }
-            if (PlayerPrefs.HasKey(password_key))
+            if (PlayerPrefs.HasKey(username_key))
             {
                 username = PlayerPrefs.GetString(username_key);
             }
@@ -432,6 +432,37 @@ namespace AhmetsHub.ClashOfPirates
                             UI_Clan.instanse.kickResponse(databaseID, response);
                         }
                         break;
+                    case RequestsID.BREW:
+                        response = packet.ReadInt();
+                        if (response == 3)
+                        {
+                            Debug.Log("Server spell not found.");
+                        }
+                        else if (response == 4)
+                        {
+                            Debug.Log("No capacity.");
+                        }
+                        else if (response == 2)
+                        {
+                            Debug.Log("No resources.");
+                        }
+                        else if (response == 1)
+                        {
+                            Debug.Log("Train started.");
+                            RushSyncRequest();
+                        }
+                        else
+                        {
+                            Debug.Log("Nothing happend.");
+                        }
+                        break;
+                    case RequestsID.CANCELBREW:
+                        response = packet.ReadInt();
+                        if (response == 1)
+                        {
+                            RushSyncRequest();
+                        }
+                        break;
                 }
             }
             catch (System.Exception ex)
@@ -523,6 +554,10 @@ namespace AhmetsHub.ClashOfPirates
             {
                 UI_Train.instanse.Sync();
             }
+            else if (UI_Spell.instanse.isOpen)
+            {
+                UI_Spell.instanse.Sync();
+            }
         }
 
         public void RushSyncRequest()
@@ -550,8 +585,29 @@ namespace AhmetsHub.ClashOfPirates
             }
         }
 
+        public void AssignServerSpell(ref Data.Spell spell)
+        {
+            if (spell != null)
+            {
+                for (int i = 0; i < initializationData.serverSpells.Count; i++)
+                {
+                    if (initializationData.serverSpells[i].id == spell.id && initializationData.serverSpells[i].level == spell.level)
+                    {
+                        spell.server = initializationData.serverSpells[i];
+                        break;
+                    }
+                }
+            }
+        }
+
         public static void RestartGame()
         {
+            if (_instance != null)
+            {
+                RealtimeNetworking.OnDisconnectedFromServer -= _instance.DisconnectedFromServer;
+                RealtimeNetworking.OnPacketReceived -= _instance.ReceivedPaket;
+            }
+            Destroy(RealtimeNetworking.instance.gameObject);
             SceneManager.LoadScene(0);
         }
 

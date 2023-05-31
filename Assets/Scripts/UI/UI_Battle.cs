@@ -27,10 +27,13 @@ namespace AhmetsHub.ClashOfPirates
         [SerializeField] private Button _closeButton = null;
         [SerializeField] private Button _okButton = null;
         [SerializeField] private Button _surrenderButton = null;
+        [SerializeField] private UI_SpellEffect spellEffectPrefab = null;
+        [SerializeField] private UI_Projectile projectilePrefab = null;
         private List<BattleUnit> unitsOnGrid = new List<BattleUnit>();
         public List<BuildingOnGrid> buildingsOnGrid = new List<BuildingOnGrid>();
         private DateTime baseTime;
-        private List<UnitToAdd> toAdd = new List<UnitToAdd>();
+        private List<ItemToAdd> toAddUnits = new List<ItemToAdd>();
+        private List<ItemToAdd> toAddSpells = new List<ItemToAdd>();
         private long target = 0;
         private bool surrender = false;
         private Data.BattleType _battleType = Data.BattleType.normal;
@@ -43,9 +46,9 @@ namespace AhmetsHub.ClashOfPirates
             public UI_Bar healthBar = null;
         }
 
-        private class UnitToAdd
+        private class ItemToAdd
         {
-            public UnitToAdd(long id, int x, int y)
+            public ItemToAdd(long id, int x, int y)
             {
                 this.id = id;
                 this.x = x;
@@ -105,6 +108,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public bool Display(List<Data.Building> buildings, long defender, Data.BattleType battleType)
         {
+            ClearSpells();
             ClearUnits();
             for (int i = 0; i < Player.instanse.data.units.Count; i++)
             {
@@ -124,11 +128,36 @@ namespace AhmetsHub.ClashOfPirates
                 if (k < 0)
                 {
                     k = units.Count;
-                    UI_BattleUnit bu = Instantiate(unitsPrefab, unitsGrid);
+                    UI_BattleUnit bu = Instantiate(unitsPrefab, battleItemsGrid);
                     bu.Initialize(Player.instanse.data.units[i].id);
                     units.Add(bu);
                 }
                 units[k].Add(Player.instanse.data.units[i].databaseID);
+            }
+
+            for (int i = 0; i < Player.instanse.data.spells.Count; i++)
+            {
+                if (!Player.instanse.data.spells[i].ready)
+                {
+                    continue;
+                }
+                int k = -1;
+                for (int j = 0; j < spells.Count; j++)
+                {
+                    if (spells[j].id == Player.instanse.data.spells[i].id)
+                    {
+                        k = j;
+                        break;
+                    }
+                }
+                if (k < 0)
+                {
+                    k = spells.Count;
+                    UI_BattleSpell bs = Instantiate(spellsPrefab, battleItemsGrid);
+                    bs.Initialize(Player.instanse.data.spells[i].id);
+                    spells.Add(bs);
+                }
+                spells[k].Add(Player.instanse.data.spells[i].databaseID);
             }
 
             if (units.Count <= 0)
@@ -159,6 +188,7 @@ namespace AhmetsHub.ClashOfPirates
             target = defender;
             startbuildings = buildings;
             battleBuildings.Clear();
+            spellEffects.Clear();
 
             for (int i = 0; i < buildings.Count; i++)
             {
@@ -220,6 +250,7 @@ namespace AhmetsHub.ClashOfPirates
                     building.healthBar.bar.fillAmount = 1;
                     building.healthBar.gameObject.SetActive(false);
 
+                    building.building.data = battleBuildings[i].building;
                     building.id = battleBuildings[i].building.databaseID;
                     building.index = i;
                     buildingsOnGrid.Add(building);
@@ -235,7 +266,8 @@ namespace AhmetsHub.ClashOfPirates
             baseTime = DateTime.Now;
             SetStatus(true);
 
-            toAdd.Clear();
+            toAddSpells.Clear();
+            toAddUnits.Clear();
             battle = new Battle();
             battle.Initialize(battleBuildings, DateTime.Now, BuildingAttackCallBack, BuildingDestroyedCallBack, BuildingDamageCallBack, StarGained);
 
@@ -340,20 +372,56 @@ namespace AhmetsHub.ClashOfPirates
         }
 
         [SerializeField] private GameObject _elements = null;
-        [SerializeField] private RectTransform unitsGrid = null;
+        [SerializeField] private RectTransform battleItemsGrid = null;
         [SerializeField] private UI_BattleUnit unitsPrefab = null;
+        [SerializeField] private UI_BattleSpell spellsPrefab = null;
         private static UI_Battle _instance = null; public static UI_Battle instanse { get { return _instance; } }
         private bool _active = false; public bool isActive { get { return _active; } }
 
         [HideInInspector] public int selectedUnit = -1;
+        [HideInInspector] public int selectedSpell = -1;
 
         private List<UI_BattleUnit> units = new List<UI_BattleUnit>();
+        private List<UI_BattleSpell> spells = new List<UI_BattleSpell>();
+
+        public void SpellSelected(Data.SpellID id)
+        {
+            if (selectedUnit >= 0)
+            {
+                units[selectedUnit].Deselect();
+                selectedUnit = -1;
+            }
+            if (selectedSpell >= 0)
+            {
+                spells[selectedSpell].Deselect();
+                selectedSpell = -1;
+            }
+            for (int i = 0; i < spells.Count; i++)
+            {
+                if (spells[i].id == id)
+                {
+                    selectedSpell = i;
+                    break;
+                }
+            }
+            if (selectedSpell >= 0 && spells[selectedSpell].count <= 0)
+            {
+                spells[selectedSpell].Deselect();
+                selectedSpell = -1;
+            }
+        }
 
         public void UnitSelected(Data.UnitID id)
         {
-            if(selectedUnit >= 0)
+            if (selectedUnit >= 0)
             {
-                // deselect
+                units[selectedUnit].Deselect();
+                selectedUnit = -1;
+            }
+            if (selectedSpell >= 0)
+            {
+                spells[selectedSpell].Deselect();
+                selectedSpell = -1;
             }
             for (int i = 0; i < units.Count; i++)
             {
@@ -365,30 +433,56 @@ namespace AhmetsHub.ClashOfPirates
             }
             if (selectedUnit >= 0 && units[selectedUnit].count <= 0)
             {
+                units[selectedUnit].Deselect();
                 selectedUnit = -1;
             }
         }
 
         public void PlaceUnit(int x, int y)
         {
-            if (battle != null && selectedUnit >= 0 && units[selectedUnit].count > 0 && battle.CanAddUnit(x, y))
+            if (battle != null)
             {
-                if (!isStarted)
+                if (selectedUnit >= 0 && units[selectedUnit].count > 0 && battle.CanAddUnit(x, y))
                 {
-                    if (!readyToStart)
+                    if (!isStarted)
                     {
-                        return;
+                        if (!readyToStart)
+                        {
+                            return;
+                        }
+                        StartBattle();
                     }
-                    StartBattle();
+                    long id = units[selectedUnit].Get();
+                    if (id >= 0)
+                    {
+                        if (units[selectedUnit].count <= 0)
+                        {
+                            units[selectedUnit].Deselect();
+                            selectedUnit = -1;
+                        }
+                        toAddUnits.Add(new ItemToAdd(id, x, y));
+                    }
                 }
-                long id = units[selectedUnit].Get();
-                if(id >= 0)
+                else if (selectedSpell >= 0 && spells[selectedSpell].count > 0 && battle.CanAddSpell(x, y))
                 {
-                    if (units[selectedUnit].count <= 0)
+                    if (!isStarted)
                     {
-                        selectedUnit = -1;
+                        if (!readyToStart)
+                        {
+                            return;
+                        }
+                        StartBattle();
                     }
-                    toAdd.Add(new UnitToAdd(id, x, y));
+                    long id = spells[selectedSpell].Get();
+                    if (id >= 0)
+                    {
+                        if (spells[selectedSpell].count <= 0)
+                        {
+                            spells[selectedSpell].Deselect();
+                            selectedSpell = -1;
+                        }
+                        toAddSpells.Add(new ItemToAdd(id, x, y));
+                    }
                 }
             }
         }
@@ -411,10 +505,23 @@ namespace AhmetsHub.ClashOfPirates
             units.Clear();
         }
 
+        private void ClearSpells()
+        {
+            for (int i = 0; i < spells.Count; i++)
+            {
+                if (spells[i])
+                {
+                    Destroy(spells[i].gameObject);
+                }
+            }
+            spells.Clear();
+        }
+
         public void SetStatus(bool status)
         {
             if (!status)
             {
+                ClearSpells();
                 ClearBuildingsOnGrid();
                 ClearUnitsOnGrid();
                 ClearUnits();
@@ -444,27 +551,55 @@ namespace AhmetsHub.ClashOfPirates
                     int frame = (int)Math.Floor(span.TotalSeconds / Data.battleFrameRate);
                     if (frame > battle.frameCount)
                     {
-                        if (toAdd.Count > 0)
+                        if (toAddUnits.Count > 0 || toAddSpells.Count > 0)
                         {
                             Data.BattleFrame battleFrame = new Data.BattleFrame();
                             battleFrame.frame = battle.frameCount + 1;
-                            for (int i = toAdd.Count - 1; i >= 0; i--)
+
+                            if (toAddUnits.Count > 0)
                             {
-                                for (int j = 0; j < Player.instanse.data.units.Count; j++)
+                                for (int i = toAddUnits.Count - 1; i >= 0; i--)
                                 {
-                                    if (Player.instanse.data.units[j].databaseID == toAdd[i].id)
+                                    for (int j = 0; j < Player.instanse.data.units.Count; j++)
                                     {
-                                        battle.AddUnit(Player.instanse.data.units[j], toAdd[i].x, toAdd[i].y, UnitSpawnCallBack, UnitAttackCallBack, UnitDiedCallBack, UnitDamageCallBack, UnitHealCallBack);
-                                        Data.BattleFrameUnit bfu = new Data.BattleFrameUnit();
-                                        bfu.id = Player.instanse.data.units[j].databaseID;
-                                        bfu.x = toAdd[i].x;
-                                        bfu.y = toAdd[i].y;
-                                        battleFrame.units.Add(bfu);
-                                        break;
+                                        if (Player.instanse.data.units[j].databaseID == toAddUnits[i].id)
+                                        {
+                                            battle.AddUnit(Player.instanse.data.units[j], toAddUnits[i].x, toAddUnits[i].y, UnitSpawnCallBack, UnitAttackCallBack, UnitDiedCallBack, UnitDamageCallBack, UnitHealCallBack);
+                                            Data.BattleFrameUnit bfu = new Data.BattleFrameUnit();
+                                            bfu.id = Player.instanse.data.units[j].databaseID;
+                                            bfu.x = toAddUnits[i].x;
+                                            bfu.y = toAddUnits[i].y;
+                                            battleFrame.units.Add(bfu);
+                                            break;
+                                        }
                                     }
+                                    toAddUnits.RemoveAt(i);
                                 }
-                                toAdd.RemoveAt(i);
                             }
+
+                            if (toAddSpells.Count > 0)
+                            {
+                                for (int i = toAddSpells.Count - 1; i >= 0; i--)
+                                {
+                                    for (int j = 0; j < Player.instanse.data.spells.Count; j++)
+                                    {
+                                        if (Player.instanse.data.spells[j].databaseID == toAddSpells[i].id)
+                                        {
+                                            Data.Spell spell = Player.instanse.data.spells[j];
+                                            Player.instanse.AssignServerSpell(ref spell);
+                                            battle.AddSpell(spell, toAddSpells[i].x, toAddSpells[i].y, SpellSpawnCallBack, SpellPalseCallBack, SpellEndCallBack);
+                                            Data.BattleFrameSpell bfs = new Data.BattleFrameSpell();
+                                            bfs.id = spell.databaseID;
+                                            bfs.x = toAddSpells[i].x;
+                                            bfs.y = toAddSpells[i].y;
+                                            battleFrame.spells.Add(bfs);
+                                            break;
+                                        }
+                                    }
+                                    toAddSpells.RemoveAt(i);
+                                }
+                            }
+
                             Packet packet = new Packet();
                             packet.Write((int)Player.RequestsID.BATTLEFRAME);
                             string frameData = Data.Serialize<Data.BattleFrame>(battleFrame);
@@ -485,7 +620,7 @@ namespace AhmetsHub.ClashOfPirates
                 else if (readyToStart)
                 {
                     TimeSpan span = DateTime.Now - baseTime;
-                    if(span.TotalSeconds >= Data.battlePrepDuration)
+                    if (span.TotalSeconds >= Data.battlePrepDuration)
                     {
                         StartBattle();
                     }
@@ -518,7 +653,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             for (int i = 0; i < battleUnits.Length; i++)
             {
-                if(battleUnits[i].id == id)
+                if (battleUnits[i].id == id)
                 {
                     return battleUnits[i];
                 }
@@ -559,12 +694,16 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     Vector3 position = new Vector3(battle._units[unitsOnGrid[i].index].positionOnGrid.x, 0, battle._units[unitsOnGrid[i].index].positionOnGrid.y);
                     unitsOnGrid[i].transform.localPosition = position;
-                  
-                    if(battle._units[unitsOnGrid[i].index].health < battle._units[unitsOnGrid[i].index].unit.health)
+
+                    if (battle._units[unitsOnGrid[i].index].health < battle._units[unitsOnGrid[i].index].unit.health)
                     {
                         unitsOnGrid[i].healthBar.gameObject.SetActive(true);
                         unitsOnGrid[i].healthBar.bar.fillAmount = battle._units[unitsOnGrid[i].index].health / battle._units[unitsOnGrid[i].index].unit.health;
                         unitsOnGrid[i].healthBar.rect.anchoredPosition = GetUnitBarPosition(unitsOnGrid[i].transform.position);
+                    }
+                    else
+                    {
+                        unitsOnGrid[i].healthBar.gameObject.SetActive(false);
                     }
                 }
             }
@@ -600,6 +739,41 @@ namespace AhmetsHub.ClashOfPirates
             return new Vector2(endW / w * Screen.width, endH / h * Screen.height);
         }
 
+        public List<UI_SpellEffect> spellEffects = new List<UI_SpellEffect>();
+
+        public void SpellSpawnCallBack(long databaseID, Data.SpellID id, Battle.BattleVector2 target, float radius)
+        {
+            Vector3 position = new Vector3(target.x, 0, target.y);
+            position = UI_Main.instanse._grid.transform.TransformPoint(position);
+            UI_SpellEffect effect = Instantiate(spellEffectPrefab, position, Quaternion.identity);
+            effect.Initialize(id, databaseID, radius);
+            spellEffects.Add(effect);
+        }
+
+        public void SpellPalseCallBack(long id)
+        {
+            for (int i = 0; i < spellEffects.Count; i++)
+            {
+                if (spellEffects[i].DatabaseID == battle._spells[i].spell.databaseID)
+                {
+                    spellEffects[i].Pulse();
+                    break;
+                }
+            }
+        }
+
+        public void SpellEndCallBack(long id)
+        {
+            for (int i = 0; i < spellEffects.Count; i++)
+            {
+                if (spellEffects[i].DatabaseID == id)
+                {
+                    spellEffects[i].End();
+                    break;
+                }
+            }
+        }
+
         public void UnitSpawnCallBack(long id)
         {
             int u = -1;
@@ -618,7 +792,7 @@ namespace AhmetsHub.ClashOfPirates
                 {
                     BattleUnit unit = Instantiate(prefab, UI_Main.instanse._grid.transform);
                     unit.transform.localPosition = new Vector3(battle._units[u].positionOnGrid.x, 0, battle._units[u].positionOnGrid.y);
-                    unit.Initialize(u, battle._units[u].unit.databaseID);
+                    unit.Initialize(u, battle._units[u].unit.databaseID, battle._units[u].unit);
 
                     unit.healthBar = Instantiate(healthBarPrefab, healthBarGrid);
                     unit.healthBar.bar.fillAmount = 1;
@@ -634,16 +808,44 @@ namespace AhmetsHub.ClashOfPirates
 
         }
 
-        public void UnitAttackCallBack(long id, Battle.BattleVector2 target)
+        public void UnitAttackCallBack(long id, long target)
         {
-
+            int u = -1;
+            int b = -1;
+            for (int i = 0; i < unitsOnGrid.Count; i++)
+            {
+                if (unitsOnGrid[i].databaseID == id)
+                {
+                    if (unitsOnGrid[i].data.attackRange > 0 && unitsOnGrid[i].data.rangedSpeed > 0)
+                    {
+                        u = i;
+                    }
+                    break;
+                }
+            }
+            if (u >= 0)
+            {
+                for (int i = 0; i < buildingsOnGrid.Count; i++)
+                {
+                    if (buildingsOnGrid[i].building.databaseID == target)
+                    {
+                        b = i;
+                        break;
+                    }
+                }
+                if (b >= 0)
+                {
+                    UI_Projectile projectile = Instantiate(projectilePrefab);
+                    projectile.Initialize(unitsOnGrid[u].transform.position + Vector3.up * 0.1f, buildingsOnGrid[b].building.transform, unitsOnGrid[u].data.rangedSpeed * Data.gridCellSize);
+                }
+            }
         }
 
         public void UnitDiedCallBack(long id)
         {
             for (int i = 0; i < unitsOnGrid.Count; i++)
             {
-                if(unitsOnGrid[i].databaseID == id)
+                if (unitsOnGrid[i].databaseID == id)
                 {
                     Destroy(unitsOnGrid[i].healthBar.gameObject);
                     Destroy(unitsOnGrid[i].gameObject);
@@ -655,7 +857,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void UnitDamageCallBack(long id, float damage)
         {
-            
+
         }
 
         public void UnitHealCallBack(long id, float health)
@@ -663,9 +865,37 @@ namespace AhmetsHub.ClashOfPirates
 
         }
 
-        public void BuildingAttackCallBack(long id, Battle.BattleVector2 target)
+        public void BuildingAttackCallBack(long id, long target)
         {
-
+            int u = -1;
+            int b = -1;
+            for (int i = 0; i < buildingsOnGrid.Count; i++)
+            {
+                if (buildingsOnGrid[i].id == id)
+                {
+                    if (buildingsOnGrid[i].building.data.radius > 0 && buildingsOnGrid[i].building.data.rangedSpeed > 0)
+                    {
+                        b = i;
+                    }
+                    break;
+                }
+            }
+            if (b >= 0)
+            {
+                for (int i = 0; i < unitsOnGrid.Count; i++)
+                {
+                    if (unitsOnGrid[i].databaseID == target)
+                    {
+                        u = i;
+                        break;
+                    }
+                }
+                if (u >= 0)
+                {
+                    UI_Projectile projectile = Instantiate(projectilePrefab);
+                    projectile.Initialize(buildingsOnGrid[b].building.transform.position + Vector3.up * 0.1f, unitsOnGrid[u].transform, buildingsOnGrid[b].building.data.rangedSpeed * Data.gridCellSize);
+                }
+            }
         }
 
         public void BuildingDamageCallBack(long id, float damage)
@@ -675,7 +905,7 @@ namespace AhmetsHub.ClashOfPirates
 
         public void BuildingDestroyedCallBack(long id, double percentage)
         {
-            if(percentage > 0)
+            if (percentage > 0)
             {
                 _percentageText.text = (battle.percentage * 100f).ToString("F2") + "%";
             }

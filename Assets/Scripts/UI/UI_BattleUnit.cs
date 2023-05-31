@@ -51,5 +51,10 @@ namespace AhmetsHub.ClashOfPirates
             UI_Battle.instanse.UnitSelected(id);
         }
 
+        public void Deselect()
+        {
+            
+        }
+
     }
 }

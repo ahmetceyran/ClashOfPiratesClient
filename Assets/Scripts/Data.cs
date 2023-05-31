@@ -19,7 +19,7 @@ namespace AhmetsHub.ClashOfPirates
         public static readonly int gridSize = 45;
         public static readonly float gridCellSize = 1;
 
-        public static readonly float battleFrameRate = 0.1f;
+        public static readonly float battleFrameRate = 0.05f;
         public static readonly int battleTilesWorthOfOneWall = 15;
         public static readonly int battleGroupWallAttackRadius = 5;
         public static readonly int battleGridOffset = 1;
@@ -35,10 +35,10 @@ namespace AhmetsHub.ClashOfPirates
         public static readonly double clanWarMatchMinPercentage = 0.70d;
 
         public static readonly double clanWarMatchTownHallEffectPercentage = 0.60d;
-        public static readonly double clanWarMatchSpellFactoryEffectPercentage = 0.5d;
-        public static readonly double clanWarMatchDarkSpellFactoryEffectPercentage = 0.5d;
-        public static readonly double clanWarMatchBarracksEffectPercentage = 0.5d;
-        public static readonly double clanWarMatchDarkBarracksEffectPercentage = 0.5d;
+        public static readonly double clanWarMatchSpellFactoryEffectPercentage = 0.05d;
+        public static readonly double clanWarMatchDarkSpellFactoryEffectPercentage = 0.05d;
+        public static readonly double clanWarMatchBarracksEffectPercentage = 0.05d;
+        public static readonly double clanWarMatchDarkBarracksEffectPercentage = 0.05d;
         public static readonly double clanWarMatchCampsEffectPercentage = 0.20d;
 
         public static readonly int[] clanRanksWithEditPermission = { 1, 2 };
@@ -279,11 +279,55 @@ namespace AhmetsHub.ClashOfPirates
             public string email = "";
             public List<Building> buildings = new List<Building>();
             public List<Unit> units = new List<Unit>();
+            public List<Spell> spells = new List<Spell>();
         }
 
         public enum UnitID
         {
-            barbarian, archer, goblin, healer, wallbreaker, giant, miner, balloon, wizard, dragon, pekka, babydragon, electrodragon, yeti, dragonrider, electrotitan, minion, hogrider, valkyrie, golem, witch, lavahound, bowler, icegolem, headhunter
+            barbarian, archer, goblin, healer, wallbreaker, giant, miner, balloon, wizard, dragon, pekka, babydragon, electrodragon, yeti, dragonrider, electrotitan, minion, hogrider, valkyrie, golem, witch, lavahound, bowler, icegolem, headhunter, skeleton, bat
+        }
+
+        // Spells that their effects have been applied to the project: lightning, healing, rage, freeze, invisibility, haste
+        public enum SpellID
+        {
+            lightning, healing, rage, jump, freeze, invisibility, recall, earthquake, haste, skeleton, bat
+        }
+
+        public class ServerSpell
+        {
+            public long databaseID = 0;
+            public SpellID id = SpellID.lightning;
+            public int level = 0;
+            public int requiredGold = 0;
+            public int requiredElixir = 0;
+            public int requiredGems = 0;
+            public int requiredDarkElixir = 0;
+            public int brewTime = 0;
+            public int housing = 1;
+            public float radius = 0;
+            public int pulsesCount = 0;
+            public float pulsesDuration = 0;
+            public float pulsesValue = 0;
+            public float pulsesValue2 = 0;
+            public float researchTime = 0;
+            public int researchGold = 0;
+            public int researchElixir = 0;
+            public int researchDarkElixir = 0;
+            public int researchGems = 0;
+        }
+
+        public class Spell
+        {
+            public long databaseID = 0;
+            public SpellID id = SpellID.lightning;
+            public int level = 0;
+            public int hosing = 1;
+            public bool brewed = false;
+            public bool ready = false;
+            public int brewTime = 0;
+            public float brewedTime = 0;
+            public int housing = 1;
+            public ServerSpell server = null;
         }
 
         public static int GetClanWarGainedXP(int gainedStars, int enemyGainedStars, int maxStars, bool didWonFirstAttack)
@@ -402,6 +446,24 @@ namespace AhmetsHub.ClashOfPirates
                 case UnitID.bowler: return darkBarracksLevel >= 7;
                 case UnitID.icegolem: return darkBarracksLevel >= 8;
                 case UnitID.headhunter: return darkBarracksLevel >= 9;
+                default: return false;
+            }
+        }
+
+        public static bool IsSpellUnlocked(SpellID id, int spellFactoryLevel, int darkSpellFactoryLevel)
+        {
+            switch (id)
+            {
+                case SpellID.lightning: return spellFactoryLevel >= 1;
+                case SpellID.healing: return spellFactoryLevel >= 2;
+                case SpellID.rage: return spellFactoryLevel >= 3;
+                case SpellID.jump: return spellFactoryLevel >= 4;
+                case SpellID.freeze: return spellFactoryLevel >= 5;
+                case SpellID.invisibility: return spellFactoryLevel >= 6;
+                case SpellID.earthquake: return darkSpellFactoryLevel >= 1;
+                case SpellID.haste: return darkSpellFactoryLevel >= 2;
+                case SpellID.skeleton: return darkSpellFactoryLevel >= 3;
+                case SpellID.bat: return darkSpellFactoryLevel >= 4;
                 default: return false;
             }
         }
@@ -545,6 +607,7 @@ namespace AhmetsHub.ClashOfPirates
         {
             public int frame = 0;
             public List<BattleFrameUnit> units = new List<BattleFrameUnit>();
+            public List<BattleFrameSpell> spells = new List<BattleFrameSpell>();
         }
 
         public class BattleFrameUnit
@@ -553,6 +616,14 @@ namespace AhmetsHub.ClashOfPirates
             public int x = 0;
             public int y = 0;
             public Unit unit = null;
+        }
+
+        public class BattleFrameSpell
+        {
+            public long id = 0;
+            public int x = 0;
+            public int y = 0;
+            public Spell spell = null;
         }
 
         public enum BattleType
@@ -588,6 +659,7 @@ namespace AhmetsHub.ClashOfPirates
             public long accountID = 0;
             public string password = "";
             public List<ServerUnit> serverUnits = new List<ServerUnit>();
+            public List<ServerSpell> serverSpells = new List<ServerSpell>();
         }
 
         public class ServerUnit

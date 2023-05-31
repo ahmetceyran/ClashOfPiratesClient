@@ -12,9 +12,11 @@ namespace AhmetsHub.ClashOfPirates
         private int i = -1; public int index { get { return i; } }
         private long _id = 0; public long databaseID { get { return _id; } }
         [HideInInspector] public UI_Bar healthBar = null;
+        [HideInInspector] public Data.Unit data = null;
 
-        public void Initialize(int index, long id)
+        public void Initialize(int index, long id, Data.Unit unit)
         {
+            data = unit;
             _id = id;
             i = index;
             lastPosition = transform.position;

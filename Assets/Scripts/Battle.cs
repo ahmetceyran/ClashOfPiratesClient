@@ -15,7 +15,9 @@ namespace AhmetsHub.ClashOfPirates
         public long attacker = 0;
         public List<Building> _buildings = new List<Building>();
         public List<Unit> _units = new List<Unit>();
+        public List<Spell> _spells = new List<Spell>();
         public List<UnitToAdd> _unitsToAdd = new List<UnitToAdd>();
+        public List<SpellToAdd> _spellsToAdd = new List<SpellToAdd>();
         private Grid grid = null;
         private Grid unlimitedGrid = null;
         private AStarSearch search = null;
@@ -82,8 +84,9 @@ namespace AhmetsHub.ClashOfPirates
 
         public int stars { get { int s = 0; if (townhallDestroyed) { s++; } if (fiftyPercentDestroyed) { s++; } if (completelyDestroyed) { s++; } return s; } }
 
-        public delegate void UnitSpawned(long id);
-        public delegate void AttackCallback(long index, BattleVector2 target);
+        public delegate void SpellSpawned(long databaseID, Data.SpellID id, BattleVector2 target, float radius);
+        public delegate void Spawned(long id);
+        public delegate void AttackCallback(long index, long target);
         public delegate void IndexCallback(long index);
         public delegate void FloatCallback(long index, float value);
         public delegate void DoubleCallback(long index, double value);
@@ -141,6 +144,23 @@ namespace AhmetsHub.ClashOfPirates
             public Data.BuildingID id;
             public BattleVector2Int position;
             public int index = -1;
+        }
+
+        public class Spell
+        {
+            public Data.Spell spell = null;
+            public IndexCallback pulseCallback = null;
+            public IndexCallback doneCallback = null;
+            public BattleVector2 position;
+            public bool done = false;
+            public int palsesDone = 0;
+            public double palsesTimer = 0;
+            public BattleVector2 positionOnGrid { get { return new BattleVector2(position.x - Data.battleGridOffset, position.y - Data.battleGridOffset); } }
+            public void Initialize(int x, int y)
+            {
+                if (spell == null) { return; }
+                position = GridToWorldPosition(new BattleVector2Int(x, y));
+            }
         }
 
         public class Unit
@@ -224,7 +244,7 @@ namespace AhmetsHub.ClashOfPirates
                     healCallback.Invoke(unit.databaseID, amount);
                 }
             }
-            public void Initialize(int x, int y) // todo
+            public void Initialize(int x, int y)
             {
                 if (unit == null) { return; }
                 position = GridToWorldPosition(new BattleVector2Int(x, y));
@@ -334,11 +354,19 @@ namespace AhmetsHub.ClashOfPirates
             public Unit unit = null;
             public int x;
             public int y;
-            public UnitSpawned callback = null;
+            public Spawned callback = null;
             public AttackCallback attackCallback = null;
             public IndexCallback dieCallback = null;
             public FloatCallback damageCallback = null;
             public FloatCallback healCallback = null;
+        }
+
+        public class SpellToAdd
+        {
+            public Spell spell = null;
+            public int x;
+            public int y;
+            public SpellSpawned callback = null;
         }
 
         public void Initialize(List<Building> buildings, DateTime time, AttackCallback attackCallback = null, DoubleCallback destroyCallback = null, FloatCallback damageCallback = null, BlankCallback starGained = null, ProjectileCallback projectileCallback = null)
@@ -456,7 +484,12 @@ namespace AhmetsHub.ClashOfPirates
             return true;
         }
 
-        public void AddUnit(Data.Unit unit, int x, int y, UnitSpawned callback = null, AttackCallback attackCallback = null, IndexCallback dieCallback = null, FloatCallback damageCallback = null, FloatCallback healCallback = null)
+        public bool CanAddSpell(int x, int y)
+        {
+            return true;
+        }
+
+        public void AddUnit(Data.Unit unit, int x, int y, Spawned callback = null, AttackCallback attackCallback = null, IndexCallback dieCallback = null, FloatCallback damageCallback = null, FloatCallback healCallback = null)
         {
             if (end)
             {
@@ -478,6 +511,27 @@ namespace AhmetsHub.ClashOfPirates
             unitToAdd.x = x;
             unitToAdd.y = y;
             _unitsToAdd.Add(unitToAdd);
+        }
+
+        public void AddSpell(Data.Spell spell, int x, int y, SpellSpawned callback = null, IndexCallback pulseCallback = null, IndexCallback doneCallback = null)
+        {
+            if (end)
+            {
+                return;
+            }
+            x += Data.battleGridOffset;
+            y += Data.battleGridOffset;
+            SpellToAdd spellToAdd = new SpellToAdd();
+            spellToAdd.callback = callback;
+            Spell battleSpell = new Spell();
+            battleSpell.doneCallback = doneCallback;
+            battleSpell.pulseCallback = pulseCallback;
+            battleSpell.spell = spell;
+            battleSpell.Initialize(x, y);
+            spellToAdd.spell = battleSpell;
+            spellToAdd.x = x;
+            spellToAdd.y = y;
+            _spellsToAdd.Add(spellToAdd);
         }
 
         public void ExecuteFrame()
@@ -502,6 +556,20 @@ namespace AhmetsHub.ClashOfPirates
                 _unitsToAdd.RemoveAt(i);
             }
 
+            addIndex = _spells.Count;
+            for (int i = _spellsToAdd.Count - 1; i >= 0; i--)
+            {
+                _spellsToAdd[i].x += Data.battleGridOffset;
+                _spellsToAdd[i].y += Data.battleGridOffset;
+                _spells.Insert(addIndex, _spellsToAdd[i].spell);
+                if (_spellsToAdd[i].callback != null)
+                {
+                    _spellsToAdd[i].callback.Invoke(_spellsToAdd[i].spell.spell.databaseID, _spellsToAdd[i].spell.spell.id, _spells[addIndex].positionOnGrid, _spellsToAdd[i].spell.spell.server.radius);
+                }
+                addIndex++;
+                _spellsToAdd.RemoveAt(i);
+            }
+
             for (int i = 0; i < _buildings.Count; i++)
             {
                 if (_buildings[i].building.targetType != Data.BuildingTargetType.none && _buildings[i].health > 0)
@@ -515,6 +583,14 @@ namespace AhmetsHub.ClashOfPirates
                 if (_units[i].health > 0)
                 {
                     HandleUnit(i, Data.battleFrameRate);
+                }
+            }
+
+            for (int i = 0; i < _spells.Count; i++)
+            {
+                if (_spells[i].done == false)
+                {
+                    HandleSpell(i, Data.battleFrameRate);
                 }
             }
 
@@ -586,54 +662,78 @@ namespace AhmetsHub.ClashOfPirates
                 else
                 {
                     // Building has a target
-                    _buildings[index].attackTimer += deltaTime;
-                    int attacksCount = (int)Math.Floor(_buildings[index].attackTimer / _buildings[index].building.speed);
-                    if (attacksCount > 0)
+                    bool freeze = false;
+                    for (int i = 0; i < _spells.Count; i++)
                     {
-                        _buildings[index].attackTimer -= (attacksCount * _buildings[index].building.speed);
-                        for (int i = 1; i <= attacksCount; i++)
+                        if (_spells[i].done) { continue; }
+                        if (_spells[i].spell.id == Data.SpellID.freeze)
                         {
-                            if (_buildings[index].building.radius > 0 && _buildings[index].building.rangedSpeed > 0)
+                            double p = GetBuildingInSpellRangePercentage(i, index);
+                            if (p > 0)
                             {
-                                float distance = BattleVector2.Distance(_units[_buildings[index].target].position, _buildings[index].worldCenterPosition);
-                                Projectile projectile = new Projectile();
-                                projectile.type = TargetType.unit;
-                                projectile.target = _buildings[index].target;
-                                projectile.timer = distance / _buildings[index].building.rangedSpeed;
-                                projectile.damage = _buildings[index].building.damage;
-                                projectile.splash = _buildings[index].building.splashRange;
-                                projectile.follow = true;
-                                projectile.position = _buildings[index].worldCenterPosition;
-                                projectileCount++;
-                                projectile.id = projectileCount;
-                                projectiles.Add(projectile);
-                                if (projectileCallback != null)
-                                {
-                                    projectileCallback.Invoke(projectile.id, _buildings[index].worldCenterPosition, _units[_buildings[index].target].position);
-                                }
+                                freeze = true;
+                                break;
                             }
-                            else
+                        }
+                    }
+                    if (!freeze)
+                    {
+                        if (IsUnitCanBeSeen(_buildings[index].target, index))
+                        {
+                            _buildings[index].attackTimer += deltaTime;
+                            int attacksCount = (int)Math.Floor(_buildings[index].attackTimer / _buildings[index].building.speed);
+                            if (attacksCount > 0)
                             {
-                                _units[_buildings[index].target].TakeDamage(_buildings[index].building.damage);
-                                if (_buildings[index].building.splashRange > 0)
+                                _buildings[index].attackTimer -= (attacksCount * _buildings[index].building.speed);
+                                for (int i = 1; i <= attacksCount; i++)
                                 {
-                                    for (int j = 0; j < _units.Count; j++)
+                                    if (_buildings[index].building.radius > 0 && _buildings[index].building.rangedSpeed > 0)
                                     {
-                                        if (j != _buildings[index].target)
+                                        float distance = BattleVector2.Distance(_units[_buildings[index].target].position, _buildings[index].worldCenterPosition);
+                                        Projectile projectile = new Projectile();
+                                        projectile.type = TargetType.unit;
+                                        projectile.target = _buildings[index].target;
+                                        projectile.timer = distance / (_buildings[index].building.rangedSpeed * Data.gridCellSize);
+                                        projectile.damage = _buildings[index].building.damage;
+                                        projectile.splash = _buildings[index].building.splashRange;
+                                        projectile.follow = true;
+                                        projectile.position = _buildings[index].worldCenterPosition;
+                                        projectileCount++;
+                                        projectile.id = projectileCount;
+                                        projectiles.Add(projectile);
+                                        if (projectileCallback != null)
                                         {
-                                            float distance = BattleVector2.Distance(_units[j].position, _units[_buildings[index].target].position);
-                                            if (distance < _buildings[index].building.splashRange * Data.gridCellSize)
+                                            projectileCallback.Invoke(projectile.id, _buildings[index].worldCenterPosition, _units[_buildings[index].target].position);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        _units[_buildings[index].target].TakeDamage(_buildings[index].building.damage);
+                                        if (_buildings[index].building.splashRange > 0)
+                                        {
+                                            for (int j = 0; j < _units.Count; j++)
                                             {
-                                                _units[j].TakeDamage(_buildings[index].building.damage * (1f - (distance / _buildings[index].building.splashRange * Data.gridCellSize)));
+                                                if (j != _buildings[index].target)
+                                                {
+                                                    float distance = BattleVector2.Distance(_units[j].position, _units[_buildings[index].target].position);
+                                                    if (distance < _buildings[index].building.splashRange * Data.gridCellSize)
+                                                    {
+                                                        _units[j].TakeDamage(_buildings[index].building.damage * (1f - (distance / _buildings[index].building.splashRange * Data.gridCellSize)));
+                                                    }
+                                                }
                                             }
                                         }
                                     }
+                                    if (_buildings[index].attackCallback != null)
+                                    {
+                                        _buildings[index].attackCallback.Invoke(_buildings[index].building.databaseID, _units[_buildings[index].target].unit.databaseID);
+                                    }
                                 }
                             }
-                            if (_buildings[index].attackCallback != null)
-                            {
-                                _buildings[index].attackCallback.Invoke(_buildings[index].building.databaseID, _units[_buildings[index].target].position);
-                            }
+                        }
+                        else
+                        {
+                            _buildings[index].target = -1;
                         }
                     }
                 }
@@ -667,7 +767,7 @@ namespace AhmetsHub.ClashOfPirates
                     continue;
                 }
 
-                if (IsUnitInRange(i, index))
+                if (IsUnitInRange(i, index) && IsUnitCanBeSeen(i, index))
                 {
                     _buildings[index].attackTimer = 0;
                     _buildings[index].target = i;
@@ -680,7 +780,7 @@ namespace AhmetsHub.ClashOfPirates
         private bool IsUnitInRange(int unitIndex, int buildingIndex)
         {
             float distance = BattleVector2.Distance(_buildings[buildingIndex].worldCenterPosition, _units[unitIndex].position);
-            if (distance <= _buildings[buildingIndex].building.radius)
+            if (distance <= (_buildings[buildingIndex].building.radius * Data.gridCellSize))
             {
                 if (_buildings[buildingIndex].building.blindRange > 0 && distance <= _buildings[buildingIndex].building.blindRange)
                 {
@@ -691,11 +791,28 @@ namespace AhmetsHub.ClashOfPirates
             return false;
         }
 
+        private bool IsUnitCanBeSeen(int unitIndex, int buildingIndex)
+        {
+            for (int i = 0; i < _spells.Count; i++)
+            {
+                if (_spells[i].done) { continue; }
+                if (_spells[i].spell.id == Data.SpellID.invisibility)
+                {
+                    float distance = BattleVector2.Distance(_units[unitIndex].position, _spells[i].position);
+                    if (distance <= (_spells[i].spell.server.radius * Data.gridCellSize))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         private void HandleUnit(int index, double deltaTime)
         {
             if (_units[index].unit.id == Data.UnitID.healer)
             {
-                if (_units[index].target >= 0 && _units[_units[index].target].health <= 0 || _units[_units[index].target].health >= _units[_units[index].target].unit.health)
+                if (_units[index].target >= 0 && (_units[_units[index].target].health <= 0 || _units[_units[index].target].health >= _units[_units[index].target].unit.health))
                 {
                     _units[index].target = -1;
                 }
@@ -713,8 +830,8 @@ namespace AhmetsHub.ClashOfPirates
                             Projectile projectile = new Projectile();
                             projectile.type = TargetType.unit;
                             projectile.target = _units[index].target;
-                            projectile.timer = distance / _units[index].unit.rangedSpeed;
-                            projectile.damage = _units[index].unit.damage;
+                            projectile.timer = distance / (_units[index].unit.rangedSpeed * Data.gridCellSize);
+                            projectile.damage = GetUnitDamage(index);
                             projectile.follow = true;
                             projectile.position = _units[index].position;
                             projectile.heal = true;
@@ -728,7 +845,8 @@ namespace AhmetsHub.ClashOfPirates
                         }
                         else
                         {
-                            _units[_units[index].target].Heal(_units[index].unit.damage);
+                            float baseHeal = GetUnitDamage(index);
+                            _units[_units[index].target].Heal(baseHeal);
                             for (int i = 0; i < _units.Count; i++)
                             {
                                 if (_units[i].health <= 0 || i == index || i == _units[index].target)
@@ -738,7 +856,7 @@ namespace AhmetsHub.ClashOfPirates
                                 float d = BattleVector2.Distance(_units[i].position, _units[_units[index].target].position);
                                 if (d < _units[i].unit.splashRange * Data.gridCellSize)
                                 {
-                                    float amount = _units[index].unit.damage * (1f - (d / _units[i].unit.splashRange * Data.gridCellSize));
+                                    float amount = baseHeal * (1f - (d / _units[i].unit.splashRange * Data.gridCellSize));
                                     _units[i].Heal(amount);
                                 }
                             }
@@ -747,7 +865,7 @@ namespace AhmetsHub.ClashOfPirates
                     else
                     {
                         // Move the healer
-                        float d = (float)deltaTime * _units[index].unit.moveSpeed * Data.gridCellSize;
+                        float d = (float)deltaTime * GetUnitMoveSpeed(index) * Data.gridCellSize;
                         _units[index].position = BattleVector2.LerpUnclamped(_units[index].position, _units[_units[index].target].position, d / distance);
                         return;
                     }
@@ -764,11 +882,48 @@ namespace AhmetsHub.ClashOfPirates
                     }
                     else
                     {
-                        double remainedTime = _units[index].pathTime - _units[index].pathTraveledTime;
+                        /*
+                        if(_units[index].unit.movement == Data.UnitMoveType.ground)
+                        {
+                            bool inJumpRange = false;
+                            for (int i = 0; i < _spells.Count; i++)
+                            {
+                                if (_spells[i].done) { continue; }
+                                if (_spells[i].spell.id == Data.SpellID.jump)
+                                {
+                                    float distance = BattleVector2.Distance(_units[index].position, _spells[i].position);
+                                    if (distance <= (_spells[i].spell.server.radius * Data.gridCellSize))
+                                    {
+                                        inJumpRange = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (inJumpRange)
+                            {
 
+                            }
+                        }
+                        */
+
+                        double remainedTime = _units[index].pathTime - _units[index].pathTraveledTime;
                         if (remainedTime >= deltaTime)
                         {
-                            _units[index].pathTraveledTime += deltaTime;
+                            double moveExtra = 1;
+                            double s = GetUnitMoveSpeed(index);
+                            if (s != _units[index].unit.moveSpeed)
+                            {
+                                moveExtra = s / _units[index].unit.moveSpeed;
+                            }
+                            _units[index].pathTraveledTime += (deltaTime * moveExtra);
+                            if (_units[index].pathTraveledTime > _units[index].pathTime)
+                            {
+                                _units[index].pathTraveledTime = _units[index].pathTime;
+                            }
+                            if (_units[index].pathTraveledTime < 0)
+                            {
+                                _units[index].pathTraveledTime = 0;
+                            }
                             deltaTime = 0;
                         }
                         else
@@ -860,8 +1015,8 @@ namespace AhmetsHub.ClashOfPirates
                                         Projectile projectile = new Projectile();
                                         projectile.type = TargetType.building;
                                         projectile.target = _units[index].target;
-                                        projectile.timer = distance / _units[index].unit.rangedSpeed;
-                                        projectile.damage = _units[index].unit.damage * multiplier;
+                                        projectile.timer = distance / (_units[index].unit.rangedSpeed * Data.gridCellSize);
+                                        projectile.damage = GetUnitDamage(index) * multiplier;
                                         projectile.follow = true;
                                         projectile.position = _units[index].position;
                                         projectileCount++;
@@ -874,12 +1029,12 @@ namespace AhmetsHub.ClashOfPirates
                                     }
                                     else
                                     {
-                                        _buildings[_units[index].target].TakeDamage(_units[index].unit.damage * multiplier, ref grid, ref blockedTiles, ref percentage, ref fiftyPercentDestroyed, ref townhallDestroyed, ref completelyDestroyed);
+                                        _buildings[_units[index].target].TakeDamage(GetUnitDamage(index) * multiplier, ref grid, ref blockedTiles, ref percentage, ref fiftyPercentDestroyed, ref townhallDestroyed, ref completelyDestroyed);
                                     }
                                     _units[index].attackTimer -= _units[index].unit.attackSpeed;
                                     if (_units[index].attackCallback != null)
                                     {
-                                        _units[index].attackCallback.Invoke(index, _buildings[_units[index].target].worldCenterPosition);
+                                        _units[index].attackCallback.Invoke(_units[index].unit.databaseID, _buildings[_units[index].target].building.databaseID);
                                     }
                                     if (_units[index].unit.id == Data.UnitID.wallbreaker)
                                     {
@@ -1308,6 +1463,129 @@ namespace AhmetsHub.ClashOfPirates
                 length *= Data.gridCellSize;
             }
             return length;
+        }
+
+        private bool HandleSpell(int index, double deltaTime)
+        {
+            bool end = false;
+            _spells[index].palsesTimer += deltaTime;
+            if (_spells[index].palsesTimer >= _spells[index].spell.server.pulsesDuration)
+            {
+                _spells[index].palsesTimer -= _spells[index].spell.server.pulsesDuration;
+                _spells[index].palsesDone += 1;
+                switch (_spells[index].spell.id)
+                {
+                    case Data.SpellID.lightning:
+                        for (int i = 0; i < _buildings.Count; i++)
+                        {
+                            if (_buildings[i].health <= 0 || !IsBuildingCanBeAttacked(_buildings[i].building.id)) { continue; }
+                            float damage = (float)Math.Ceiling(GetBuildingInSpellRangePercentage(index, i) * _spells[index].spell.server.pulsesValue);
+                            if (damage <= 0) { continue; }
+                            _buildings[i].TakeDamage(damage, ref grid, ref blockedTiles, ref percentage, ref fiftyPercentDestroyed, ref townhallDestroyed, ref completelyDestroyed);
+                        }
+                        break;
+                    case Data.SpellID.healing:
+                        for (int i = 0; i < _units.Count; i++)
+                        {
+                            if (_units[i].health <= 0) { continue; }
+                            float distance = BattleVector2.Distance(_units[i].position, _spells[index].position);
+                            if (distance > _spells[index].spell.server.radius * Data.gridCellSize) { continue; }
+                            _units[i].Heal(_spells[index].spell.server.pulsesValue);
+                        }
+                        break;
+                    case Data.SpellID.rage:
+
+                        break;
+                    case Data.SpellID.jump:
+
+                        break;
+                    case Data.SpellID.freeze:
+
+                        break;
+                    case Data.SpellID.invisibility:
+
+                        break;
+                    case Data.SpellID.earthquake:
+
+                        break;
+                    case Data.SpellID.haste:
+
+                        break;
+                    case Data.SpellID.skeleton:
+
+                        break;
+                    case Data.SpellID.bat:
+
+                        break;
+                }
+                if (_spells[index].pulseCallback != null)
+                {
+                    _spells[index].pulseCallback.Invoke(_spells[index].spell.databaseID);
+                }
+            }
+            if (_spells[index].palsesDone >= _spells[index].spell.server.pulsesCount)
+            {
+                _spells[index].done = true;
+                if (_spells[index].doneCallback != null)
+                {
+                    _spells[index].doneCallback.Invoke(_spells[index].spell.databaseID);
+                }
+                end = true;
+            }
+            return end;
+        }
+
+        private double GetBuildingInSpellRangePercentage(int spellIndex, int buildingIndex)
+        {
+            double percentage = 0;
+            float distance = BattleVector2.Distance(_buildings[buildingIndex].worldCenterPosition, _spells[spellIndex].position);
+            float radius = Math.Max(_buildings[buildingIndex].building.columns, _buildings[buildingIndex].building.rows) * Data.gridCellSize / 2f;
+            float delta = (_spells[spellIndex].spell.server.radius * Data.gridCellSize) - (distance + radius);
+            if (delta >= 0)
+            {
+                percentage = 1;
+            }
+            else
+            {
+                delta = Math.Abs(delta);
+                if (delta < radius * 2f)
+                {
+                    percentage = delta / (radius * 2f);
+                }
+            }
+            return percentage;
+        }
+
+        private float GetUnitDamage(int index)
+        {
+            float damage = _units[index].unit.damage;
+            for (int i = 0; i < _spells.Count; i++)
+            {
+                if (_spells[i].done) { continue; }
+                if (_spells[i].spell.id == Data.SpellID.rage)
+                {
+                    damage += (_units[index].unit.damage * _spells[i].spell.server.pulsesValue);
+                }
+            }
+            return damage;
+        }
+
+        private float GetUnitMoveSpeed(int index)
+        {
+            float speed = _units[index].unit.moveSpeed;
+            for (int i = 0; i < _spells.Count; i++)
+            {
+                if (_spells[i].done) { continue; }
+                if (_spells[i].spell.id == Data.SpellID.rage)
+                {
+                    speed += _spells[i].spell.server.pulsesValue2;
+                }
+                else if (_spells[i].spell.id == Data.SpellID.haste)
+                {
+                    speed += _spells[i].spell.server.pulsesValue;
+                }
+            }
+            return speed;
         }
 
         public class Path
